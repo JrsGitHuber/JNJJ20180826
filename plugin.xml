@@ -13,12 +13,12 @@
    </extension>
    
    <extension point="org.eclipse.ui.handlers">
-      <handler commandId="com.uds.sjec.commands.productionTable" class="com.uds.sjec.handlers.SampleHandler"/> 
-      <handler commandId="com.uds.sjec.commands.productionTablePdf" class="com.uds.sjec.handlers.SampleHandler"/> 
-      <handler commandId="com.uds.sjec.commands.productionTableOfLevelOne" class="com.uds.sjec.handlers.SampleHandler"/> 
-      <handler commandId="com.uds.sjec.commands.productionTablePdfOfLevelOne" class="com.uds.sjec.handlers.SampleHandler"/> 
-      <handler commandId="com.uds.sjec.commands.batchExportExcel" class="com.uds.sjec.handlers.SampleHandler"/> 
-      <handler commandId="com.uds.sjec.commands.EditVariableCondition" class="com.uds.sjec.handlers.SampleHandler"/> 
+      <handler commandId="com.uds.sjec.commands.productionTable" class="com.uds.sjec.handlers.NewSampleHandler"/> 
+      <handler commandId="com.uds.sjec.commands.productionTablePdf" class="com.uds.sjec.handlers.NewSampleHandler"/> 
+      <handler commandId="com.uds.sjec.commands.productionTableOfLevelOne" class="com.uds.sjec.handlers.NewSampleHandler"/> 
+      <handler commandId="com.uds.sjec.commands.productionTablePdfOfLevelOne" class="com.uds.sjec.handlers.NewSampleHandler"/> 
+      <handler commandId="com.uds.sjec.commands.batchExportExcel" class="com.uds.sjec.handlers.NewSampleHandler"/> 
+      <handler commandId="com.uds.sjec.commands.EditVariableCondition" class="com.uds.sjec.handlers.NewSampleHandler"/> 
    </extension>
    
    <extension point="org.eclipse.ui.bindings">
