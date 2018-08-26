@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+
+  <extension  point="org.eclipse.ui.commands">
+      <category name="Sample Category" id="com.uds.sjec.commands.category"/>
+      <command name="输出BOM明细表到Excel" categoryId="com.uds.sjec.commands.category" id="com.uds.sjec.commands.productionTable"/>
+      <command name="输出BOM明细表到Pdf" categoryId="com.uds.sjec.commands.category" id="com.uds.sjec.commands.productionTablePdf"/>
+      <command name="输出BOM明细表到Excel" categoryId="com.uds.sjec.commands.category" id="com.uds.sjec.commands.productionTableOfLevelOne"/>
+      <command name="输出BOM明细表到Pdf" categoryId="com.uds.sjec.commands.category" id="com.uds.sjec.commands.productionTablePdfOfLevelOne"/>
+      <command name="批量导出" categoryId="com.uds.sjec.commands.category" id="com.uds.sjec.commands.batchExportExcel"/>
+      <command name="编辑变量条件" categoryId="com.uds.sjec.commands.category" id="com.uds.sjec.commands.EditVariableCondition"/>
+   </extension>
+   
+   <extension point="org.eclipse.ui.handlers">
+      <handler commandId="com.uds.sjec.commands.productionTable" class="com.uds.sjec.handlers.SampleHandler"/> 
+      <handler commandId="com.uds.sjec.commands.productionTablePdf" class="com.uds.sjec.handlers.SampleHandler"/> 
+      <handler commandId="com.uds.sjec.commands.productionTableOfLevelOne" class="com.uds.sjec.handlers.SampleHandler"/> 
+      <handler commandId="com.uds.sjec.commands.productionTablePdfOfLevelOne" class="com.uds.sjec.handlers.SampleHandler"/> 
+      <handler commandId="com.uds.sjec.commands.batchExportExcel" class="com.uds.sjec.handlers.SampleHandler"/> 
+      <handler commandId="com.uds.sjec.commands.EditVariableCondition" class="com.uds.sjec.handlers.SampleHandler"/> 
+   </extension>
+   
+   <extension point="org.eclipse.ui.bindings">
+      <key commandId="com.uds.sjec.commands.sampleCommand" contextId="org.eclipse.ui.contexts.window" sequence="M1+6" schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"/>
+   </extension>
+   
+   <extension point="org.eclipse.ui.menus">
+      <menuContribution locationURI="menu:org.eclipse.ui.main.menu?after=additions">
+         <menu label="SJEC报表工具" mnemonic="M" id="com.uds.sjec.menus.sampleMenu">
+            <menu label="整体BOM">
+            <command commandId="com.uds.sjec.commands.productionTable" mnemonic="S" id="com.uds.sjec.menus.productionTable"/>
+            <command commandId="com.uds.sjec.commands.productionTablePdf" mnemonic="S" id="com.uds.sjec.menus.productionTablePdf"/>
+            </menu>
+            <menu label="一级BOM">
+            <command commandId="com.uds.sjec.commands.productionTableOfLevelOne" mnemonic="S" id="com.uds.sjec.menus.productionTableOfLevelOne"/>
+            <command commandId="com.uds.sjec.commands.productionTablePdfOfLevelOne" mnemonic="S" id="com.uds.sjec.menus.productionTablePdfOfLevelOne"/>
+            </menu>
+            <command commandId="com.uds.sjec.commands.batchExportExcel" mnemonic="S" id="com.uds.sjec.menus.batchExportExcel"/>
+         </menu>
+      </menuContribution>
+      
+       <menuContribution
+            locationURI="popup:org.eclipse.ui.popup.any?after=additions">
+             <command commandId="com.uds.sjec.commands.EditVariableCondition" id="com.uds.sjec.commands.EditVariableCondition"/>
+      </menuContribution>
+   </extension> 
+   
+    <extension point="com.teamcenter.rac.aifrcp.application">
+		<aif_app_item
+			displayMode="Primary"
+			groupName="Mycompany"
+			icon="icons/SJEC.png"
+			id="com.udschina.daily.chemical.application"
+			name="UDS电梯配置管理系统"
+			ordinality="200"
+			perspective_id="com.uds.rac.custom.perspectives.FrameWorkPerspective"
+			session="com.teamcenter.rac.kernel.TCSession"
+			tooltip="UDS电梯配置管理系统">
+		</aif_app_item>
+	</extension>
+	
+	<extension point="org.eclipse.ui.perspectives">
+		<perspective
+			class="com.uds.rac.custom.perspectives.FrameWorkPerspective"
+			icon="icons/SJEC.png"
+			id="com.uds.rac.custom.perspectives.FrameWorkPerspective"
+			name="UDS电梯配置管理系统"/>
+	</extension>
+	
+	<extension point="org.eclipse.ui.views">
+		<view
+			allowMultiple="false"
+			class="com.uds.rac.custom.views.MainView"			
+			id="com.uds.rac.custom.views.MainView"
+			name="UDS电梯配置管理系统"/>
+	</extension>
+
+</plugin>
