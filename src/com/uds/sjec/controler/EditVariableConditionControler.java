@@ -6,14 +6,17 @@ import com.teamcenter.rac.aifrcp.AIFUtility;
 import com.teamcenter.rac.kernel.TCComponentBOMLine;
 import com.teamcenter.rac.kernel.TCException;
 import com.teamcenter.rac.util.MessageBox;
+import com.uds.Jr.utils.StringUtil;
 import com.uds.common.exceptions.CalculateException;
 import com.uds.common.utils.MathUtil;
 import com.uds.sjec.bean.VariabelConditionTableBean;
 import com.uds.sjec.common.ConstDefine;
 import com.uds.sjec.service.IEditVariableConditionService;
 import com.uds.sjec.service.impl.EditVariableConditionServiceImpl;
+
 import java.awt.Color;
 import java.awt.EventQueue;
+
 import javax.swing.BorderFactory;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
@@ -21,6 +24,7 @@ import javax.swing.JPanel;
 import javax.swing.JLabel;
 import javax.swing.JTextField;
 import javax.swing.JButton;
+import javax.swing.JTextPane;
 import javax.swing.JTree;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.event.DocumentEvent;
@@ -28,10 +32,26 @@ import javax.swing.event.DocumentListener;
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.text.AbstractDocument;
+import javax.swing.text.AttributeSet;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.BoxView;
+import javax.swing.text.ComponentView;
+import javax.swing.text.Document;
+import javax.swing.text.Element;
+import javax.swing.text.IconView;
+import javax.swing.text.LabelView;
+import javax.swing.text.ParagraphView;
+import javax.swing.text.SimpleAttributeSet;
+import javax.swing.text.StyleConstants;
+import javax.swing.text.StyledEditorKit;
+import javax.swing.text.View;
+import javax.swing.text.ViewFactory;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.ListSelectionModel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
+
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
@@ -47,8 +67,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import javax.swing.JTextArea;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import sun.swing.table.DefaultTableCellHeaderRenderer;
 
@@ -83,7 +103,8 @@ public class EditVariableConditionControler {
 		private JTextField textField_elevatorType;
 		private JTextField textField_rev;
 		private JTextField textField_BOMLine;
-		private JTextArea textArea_varibleCondition;
+//		private JTextArea textArea_varibleCondition;
+		private JTextPane textArea_varibleCondition;
 		private String elevatorType = null; // 梯型
 		private String elevatorRev = null;// 版本
 		private String defaultVariableCondition = null;
@@ -109,8 +130,12 @@ public class EditVariableConditionControler {
 		private String tipText;
 		private Map<String, String> paramCodeAndTypeMap;// 存储参数代号和参数类型
 		private JButton button_refresh;
+		private SimpleAttributeSet attrSet;
+		private SimpleAttributeSet attrSet1;
 
 		public EditVariableConditionFrame(final TCComponentBOMLine topBomLine, final TCComponentBOMLine bomLine) {
+			InitSimpleAttributeSet();
+			
 			setBounds(100, 100, 571, 726);
 			setTitle("编辑变量条件");
 			setResizable(false);
@@ -148,11 +173,12 @@ public class EditVariableConditionControler {
 			label_varibleCondition.setBounds(10, 82, 54, 15);
 			panel.add(label_varibleCondition);
 
-			textArea_varibleCondition = new JTextArea();
-			panel.add(textArea_varibleCondition);
+//			textArea_varibleCondition = new JTextArea();
+			textArea_varibleCondition = new MyJTextPane();
+//			panel.add(textArea_varibleCondition);
 			textArea_varibleCondition.setBounds(10, 100, 385, 112);
-			textArea_varibleCondition.setLineWrap(true);
-			textArea_varibleCondition.setWrapStyleWord(true);
+//			textArea_varibleCondition.setLineWrap(true);
+//			textArea_varibleCondition.setWrapStyleWord(true);
 
 			JScrollPane scrollPane_textArea = new JScrollPane();
 			scrollPane_textArea.setBounds(10, 100, 385, 112);
@@ -209,13 +235,13 @@ public class EditVariableConditionControler {
 			button_equalTo.setBounds(252, 222, 54, 23);
 			panel.add(button_equalTo);
 
-			JButton button_nor = new JButton("!");
+			JButton button_nor = new JButton("!=");
 			button_nor.setBounds(253, 255, 53, 23);
 			panel.add(button_nor);
 
 			JButton button_clear = new JButton("清除");
-//			button_clear.setBounds(334, 255, 63, 23);
-			button_clear.setBounds(334, 222, 63, 55);
+			button_clear.setBounds(334, 255, 63, 23);
+//			button_clear.setBounds(334, 222, 63, 55);
 			panel.add(button_clear);
 
 			JButton button_confirm = new JButton("确认");
@@ -234,14 +260,15 @@ public class EditVariableConditionControler {
 			button_with.setBounds(120, 255, 54, 23);
 			panel.add(button_with);
 
-			JButton button_getValue = new JButton("获取");
+			JButton button_getValue = new JButton("标记");
 			button_getValue.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent e) {
+					ChangeTextColor();
 				}
 			});
 			button_getValue.setBounds(334, 222, 63, 23);
 			panel.add(button_getValue);
-			button_getValue.setVisible(false);
+//			button_getValue.setVisible(false);
 
 			JPanel panel_param = new JPanel();
 			panel_param.setBounds(10, 288, 386, 351);
@@ -523,11 +550,14 @@ public class EditVariableConditionControler {
 							String note4 = bomLine.getProperty("S2_bl_vc3");
 							String note5 = bomLine.getProperty("S2_bl_vc4");
 							defaultVariableCondition = note1 + note2 + note3 + note4 + note5;
-							textArea_varibleCondition.setText(defaultVariableCondition);
+							
+							TextBean bean = new TextBean(defaultVariableCondition, attrSet);
+							InsertToJTextPane(bean);
+//							textArea_varibleCondition.setText(defaultVariableCondition);
 						} catch (TCException e1) {
 							e1.printStackTrace();
 						}
-						textArea_varibleCondition.grabFocus();
+//						textArea_varibleCondition.grabFocus();
 					} else {
 						MessageBox.post("请选择BOM行。", "编辑变量条件", com.teamcenter.rac.util.MessageBox.ERROR);
 					}
@@ -665,40 +695,42 @@ public class EditVariableConditionControler {
 					currentPosition = textArea_varibleCondition.getCaretPosition();
 					tailString = textArea_varibleCondition.getText().substring(currentPosition);
 					headString = textArea_varibleCondition.getText().substring(0, currentPosition);
-					textArea_varibleCondition.setText(headString + "!" + tailString);
-					setPosition = headString.length() + 1;
+					textArea_varibleCondition.setText(headString + "!=" + tailString);
+					setPosition = headString.length() + 2;
 					textArea_varibleCondition.setCaretPosition(setPosition);
 					textArea_varibleCondition.grabFocus();
 
 				}
 			});
 
-			// 获取
-			button_getValue.addActionListener(new ActionListener() {
-				public void actionPerformed(ActionEvent e) {
-					AbstractAIFUIApplication application = AIFUtility.getCurrentApplication();
-					InterfaceAIFComponent selComp = application.getTargetComponent();
-					TCComponentBOMLine bomLine = (TCComponentBOMLine) selComp;
-					try {
-						String note1 = bomLine.getProperty("S2_bl_vc");
-						String note2 = bomLine.getProperty("S2_bl_vc1");
-						String note3 = bomLine.getProperty("S2_bl_vc2");
-						String note4 = bomLine.getProperty("S2_bl_vc3");
-						String note5 = bomLine.getProperty("S2_bl_vc4");
-						defaultVariableCondition = note1 + note2 + note3 + note4 + note5;
-						textArea_varibleCondition.setText(defaultVariableCondition);
-					} catch (TCException e1) {
-						e1.printStackTrace();
-					}
-					textArea_varibleCondition.grabFocus();
-				}
-			});
+//			// 获取
+//			button_getValue.addActionListener(new ActionListener() {
+//				public void actionPerformed(ActionEvent e) {
+//					AbstractAIFUIApplication application = AIFUtility.getCurrentApplication();
+//					InterfaceAIFComponent selComp = application.getTargetComponent();
+//					TCComponentBOMLine bomLine = (TCComponentBOMLine) selComp;
+//					try {
+//						String note1 = bomLine.getProperty("S2_bl_vc");
+//						String note2 = bomLine.getProperty("S2_bl_vc1");
+//						String note3 = bomLine.getProperty("S2_bl_vc2");
+//						String note4 = bomLine.getProperty("S2_bl_vc3");
+//						String note5 = bomLine.getProperty("S2_bl_vc4");
+//						defaultVariableCondition = note1 + note2 + note3 + note4 + note5;
+//						textArea_varibleCondition.setText(defaultVariableCondition);
+//					} catch (TCException e1) {
+//						e1.printStackTrace();
+//					}
+//					textArea_varibleCondition.grabFocus();
+//				}
+//			});
 			// 清除
 			button_clear.addActionListener(new ActionListener() {
 
 				@Override
 				public void actionPerformed(ActionEvent e) {
-					textArea_varibleCondition.setText(null);
+					TextBean bean = new TextBean("0", attrSet);
+					InsertToJTextPane(bean);
+					textArea_varibleCondition.setText("");
 					textArea_varibleCondition.grabFocus();
 				}
 			});
@@ -757,53 +789,73 @@ public class EditVariableConditionControler {
 						TCComponentBOMLine bomLine = (TCComponentBOMLine) selComp;
 						String variableCondition = textArea_varibleCondition.getText();
 						if (!variableCondition.equals("")) {
+							variableCondition = variableCondition.replaceAll("\r|\n|\r\n| ", "");
+							variableCondition = variableCondition.replaceAll("!=", "!==");
 							try {
 								// 判断是否符合，报错就不符合
 								if (!MathUtil.PassConditionNotEmpty(variableCondition) && !MathUtil.PassCondition(variableCondition)) {
 									if (editVariableConditionService.checkType(variableCondition, paramCodeAndTypeMap)) {
 										// 判断条件的长度得填在BOM的几个属性里
 										// TODO Jr 要处理汉字长度
-										int count;
-										if (variableCondition.length() % 160 == 0) {
-											count = variableCondition.length() / 160;
-										} else {
-											count = variableCondition.length() / 160 + 1;
+//										int count;
+										variableCondition = variableCondition.replaceAll("!==", "!=");
+										List<String> list = StringUtil.GetStrListByCharacterSize(variableCondition, 160);
+										int listSize = list.size();
+										if (listSize > 4) {
+											MessageBox.post("变量条件过长，无法存储", "提示", com.teamcenter.rac.util.MessageBox.ERROR);
+											return;
 										}
-										if (count == 1) {
-											bomLine.setProperty("S2_bl_vc", variableCondition);
-										} else if (count == 2) {
-											String note1 = variableCondition.substring(0, 160);
-											String note2 = variableCondition.substring(160);
-											bomLine.setProperty("S2_bl_vc", note1);
-											bomLine.setProperty("S2_bl_vc1", note2);
-										} else if (count == 3) {
-											String note1 = variableCondition.substring(0, 160);
-											String note2 = variableCondition.substring(160, 320);
-											String note3 = variableCondition.substring(320);
-											bomLine.setProperty("S2_bl_vc", note1);
-											bomLine.setProperty("S2_bl_vc1", note2);
-											bomLine.setProperty("S2_bl_vc2", note3);
-										} else if (count == 4) {
-											String note1 = variableCondition.substring(0, 160);
-											String note2 = variableCondition.substring(160, 320);
-											String note3 = variableCondition.substring(320, 480);
-											String note4 = variableCondition.substring(480);
-											bomLine.setProperty("S2_bl_vc", note1);
-											bomLine.setProperty("S2_bl_vc1", note2);
-											bomLine.setProperty("S2_bl_vc2", note3);
-											bomLine.setProperty("S2_bl_vc3", note4);
-										} else if (count == 5) {
-											String note1 = variableCondition.substring(0, 160);
-											String note2 = variableCondition.substring(160, 320);
-											String note3 = variableCondition.substring(320, 480);
-											String note4 = variableCondition.substring(480, 640);
-											String note5 = variableCondition.substring(640);
-											bomLine.setProperty("S2_bl_vc", note1);
-											bomLine.setProperty("S2_bl_vc1", note2);
-											bomLine.setProperty("S2_bl_vc2", note3);
-											bomLine.setProperty("S2_bl_vc3", note4);
-											bomLine.setProperty("S2_bl_vc4", note5);
+										for (int i = 0; i < 5; i++) {
+											String index = i == 0 ? "" : ""+i;
+											String property = "S2_bl_vc" + index;
+											bomLine.setProperty(property, "");
 										}
+										for (int i = 0; i < listSize; i++) {
+											String index = i == 0 ? "" : ""+i;
+											String property = "S2_bl_vc" + index;
+											bomLine.setProperty(property, list.get(i));
+										}
+										
+//										if (variableCondition.length() % 160 == 0) {
+//											count = variableCondition.length() / 160;
+//										} else {
+//											count = variableCondition.length() / 160 + 1;
+//										}
+//										if (count == 1) {
+//											bomLine.setProperty("S2_bl_vc", variableCondition);
+//										} else if (count == 2) {
+//											String note1 = variableCondition.substring(0, 160);
+//											String note2 = variableCondition.substring(160);
+//											bomLine.setProperty("S2_bl_vc", note1);
+//											bomLine.setProperty("S2_bl_vc1", note2);
+//										} else if (count == 3) {
+//											String note1 = variableCondition.substring(0, 160);
+//											String note2 = variableCondition.substring(160, 320);
+//											String note3 = variableCondition.substring(320);
+//											bomLine.setProperty("S2_bl_vc", note1);
+//											bomLine.setProperty("S2_bl_vc1", note2);
+//											bomLine.setProperty("S2_bl_vc2", note3);
+//										} else if (count == 4) {
+//											String note1 = variableCondition.substring(0, 160);
+//											String note2 = variableCondition.substring(160, 320);
+//											String note3 = variableCondition.substring(320, 480);
+//											String note4 = variableCondition.substring(480);
+//											bomLine.setProperty("S2_bl_vc", note1);
+//											bomLine.setProperty("S2_bl_vc1", note2);
+//											bomLine.setProperty("S2_bl_vc2", note3);
+//											bomLine.setProperty("S2_bl_vc3", note4);
+//										} else if (count == 5) {
+//											String note1 = variableCondition.substring(0, 160);
+//											String note2 = variableCondition.substring(160, 320);
+//											String note3 = variableCondition.substring(320, 480);
+//											String note4 = variableCondition.substring(480, 640);
+//											String note5 = variableCondition.substring(640);
+//											bomLine.setProperty("S2_bl_vc", note1);
+//											bomLine.setProperty("S2_bl_vc1", note2);
+//											bomLine.setProperty("S2_bl_vc2", note3);
+//											bomLine.setProperty("S2_bl_vc3", note4);
+//											bomLine.setProperty("S2_bl_vc4", note5);
+//										}
 									}
 								}
 							} catch (CalculateException e1) {
@@ -846,5 +898,144 @@ public class EditVariableConditionControler {
 				}
 			});
 		}
+		
+		private void ChangeTextColor() {
+//			textArea_varibleCondition.setText("");
+			String content = textArea_varibleCondition.getText();
+	    	Pattern pattern = Pattern.compile("\\+\\+|==|!=|>=|<=|>|<|\\(|\\)|\\&\\&|\\|\\|");
+	    	
+	    	List<TextBean> beanList = new ArrayList<TextBean>();
+	    	while (!content.equals("")) {
+	    		Matcher matcher = pattern.matcher(content);
+	    		if (matcher.find()) {
+	    			int start = matcher.start();
+	    			int end = matcher.end();
+	    			int length = content.length();
+	    			String str = content.substring(0, start);
+	    			String str1 = matcher.group();
+	    			if (start != 0 && content.charAt(start-1) != ' ') {
+	    				str1 = " " + str1;
+	    			}
+	    			if (end != length && content.charAt(end) != ' ') {
+	    				str1 = str1 + " ";
+	    			}
+	    			content = content.substring(end, length);
+	    			
+	    			TextBean bean = new TextBean(str, attrSet);
+	    			TextBean bean1 = new TextBean(str1, attrSet1);
+	    			beanList.add(bean);
+	    			beanList.add(bean1);
+	    		} else {
+	    			TextBean bean = new TextBean(content, attrSet);
+	    			beanList.add(bean);
+	    			content = "";
+	    		}
+	    	}
+	    	
+	    	textArea_varibleCondition.setText("");
+	    	for (TextBean bean : beanList) {
+	    		InsertToJTextPane(bean);
+	    	}
+		}
+		
+//		private void ResetJTextPane(TextBean bean) {
+//			Document doc = textArea_varibleCondition.getDocument();
+//			try {
+//				doc.insertString(doc.getLength(), bean.str, bean.attributeSet);
+//			} catch (BadLocationException e) {
+//				System.out.println("BadLocationException: " + e);
+//			}
+//		}
+		
+		private void InsertToJTextPane(TextBean bean) {
+			Document doc = textArea_varibleCondition.getDocument();
+			try {
+				doc.insertString(doc.getLength(), bean.str, bean.attributeSet);
+			} catch (BadLocationException e) {
+				System.out.println("BadLocationException: " + e);
+			}
+		}
+		
+		private void InitSimpleAttributeSet() {
+			attrSet = new SimpleAttributeSet();
+			StyleConstants.setForeground(attrSet, Color.BLACK);
+			
+			attrSet1 = new SimpleAttributeSet();
+			StyleConstants.setForeground(attrSet1, Color.RED);
+			StyleConstants.setBold(attrSet1, true);
+		}
 	}
 }
+
+class MyJTextPane extends JTextPane {
+	private static final long serialVersionUID = 1L;
+
+	private class WarpEditorKit extends StyledEditorKit {
+		private static final long serialVersionUID = 1L;
+
+		private ViewFactory defaultFactory = new WarpColumnFactory();
+
+		@Override
+		public ViewFactory getViewFactory() {
+			return defaultFactory;
+		}
+	}
+
+	private class WarpColumnFactory implements ViewFactory {
+
+		public View create(Element elem) {
+			String kind = elem.getName();
+			if (kind != null) {
+				if (kind.equals(AbstractDocument.ContentElementName)) {
+					return new WarpLabelView(elem);
+				} else if (kind.equals(AbstractDocument.ParagraphElementName)) {
+					return new ParagraphView(elem);
+				} else if (kind.equals(AbstractDocument.SectionElementName)) {
+					return new BoxView(elem, View.Y_AXIS);
+				} else if (kind.equals(StyleConstants.ComponentElementName)) {
+					return new ComponentView(elem);
+				} else if (kind.equals(StyleConstants.IconElementName)) {
+					return new IconView(elem);
+				}
+			}
+
+			// default to text display
+			return new LabelView(elem);
+		}
+	}
+
+	private class WarpLabelView extends LabelView {
+
+		public WarpLabelView(Element elem) {
+			super(elem);
+		}
+
+		@Override
+		public float getMinimumSpan(int axis) {
+			switch (axis) {
+			case View.X_AXIS:
+				return 0;
+			case View.Y_AXIS:
+				return super.getMinimumSpan(axis);
+			default:
+				throw new IllegalArgumentException("Invalid axis: " + axis);
+			}
+		}
+	}
+
+	public MyJTextPane() {
+		super();
+		this.setEditorKit(new WarpEditorKit());
+	}
+}
+
+class TextBean {
+	public String str;
+	public AttributeSet attributeSet;
+	
+	public TextBean(String str, AttributeSet attributeSet) {
+		this.str = str;
+		this.attributeSet = attributeSet;
+	}
+}
+

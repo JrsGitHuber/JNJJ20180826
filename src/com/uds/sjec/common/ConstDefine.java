@@ -1,11 +1,10 @@
 package com.uds.sjec.common;
 
-import com.teamcenter.rac.kernel.TCPreferenceService;
 import com.teamcenter.rac.kernel.TCSession;
 
 public class ConstDefine {
 	// 判断是否是在测试
-	public static boolean IFTEST = true;
+	public static boolean IFTEST = false;
 	
 	public static boolean IFDEFINE = false;
 	public static boolean IFCANDO = true;
@@ -28,8 +27,13 @@ public class ConstDefine {
 	
 	
 	public static TCSession TC_SESSION = null;
-	public static TCPreferenceService TC_PREFERENCESERVICE = null;
 	public static String TC_GROUP_ELECTRICAL = "-E";
 	public static String TC_GROUP_MECHANICAL = "-M";
 	public static String TC_GROUP_SUFFIX = "";
+	
+	// 本次操作的时间点（用于建立目录）
+	public static String TimePoint = "";
+	// 本次操作的临时文件夹的位置（还要根据时间点进行构造）
+	public static String JNJJPath = "C:\\TEMP\\JNJJTemp\\";
+	public static String JNJJTempPath = "";
 }

@@ -4,11 +4,14 @@ import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
-import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map.Entry;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
@@ -20,9 +23,11 @@ import javax.swing.JTextField;
 import javax.swing.border.EmptyBorder;
 import javax.swing.filechooser.FileSystemView;
 
+import com.aspose.cells.BackgroundType;
+import com.aspose.cells.Cell;
 import com.aspose.cells.Cells;
 import com.aspose.cells.FileFormatType;
-import com.aspose.cells.License;
+import com.aspose.cells.Style;
 import com.aspose.cells.Workbook;
 import com.aspose.cells.Worksheet;
 import com.teamcenter.rac.aif.kernel.AIFComponentContext;
@@ -31,6 +36,7 @@ import com.teamcenter.rac.kernel.TCComponentBOMLine;
 import com.teamcenter.rac.kernel.TCComponentItemRevision;
 import com.teamcenter.rac.util.MessageBox;
 import com.uds.sjec.bean.BomToExcelBean;
+import com.uds.sjec.common.CommonFunction;
 import com.uds.sjec.utils.BomUtil;
 import com.uds.sjec.utils.StringUtils;
 import com.uds.sjec.utils.TipsUI;
@@ -43,11 +49,16 @@ public class ExportBomsToFiles {
 	private Rectangle m_rectangle;
 	private static ExportBomUI m_frame;
 	
+	private List<String> m_columnNameList;
+	private List<String> m_propertyNameList;
+	
 	public ExportBomsToFiles(Rectangle rectangle) {
 		m_ifGetAll = false;
 		m_bomLineList = new ArrayList<TCComponentBOMLine>();
 		m_fileSuffixString = "";
 		m_rectangle = rectangle;
+		m_columnNameList = new ArrayList<String>();
+		m_propertyNameList = new ArrayList<String>();
 	}
 
 	public void DoTask(String commandID, InterfaceAIFComponent[] selComps, boolean ifAllowRevision) throws Exception {
@@ -100,6 +111,13 @@ public class ExportBomsToFiles {
 			return;
 		}
 		
+		// 读取首选项，获取导表需要的列名和对应的属性
+		CommonFunction.GetExportMessage(m_columnNameList, m_propertyNameList);
+		if (!CommonFunction.m_errorMessage.equals("")) {
+			MessageBox.post("获取首选项信息出错：" + CommonFunction.m_errorMessage, "提示", MessageBox.INFORMATION);
+			return;
+		}
+		
 		try {
 			if (m_frame == null) {
 				m_frame = new ExportBomUI();
@@ -126,7 +144,7 @@ public class ExportBomsToFiles {
 			setResizable(false);
 			setTitle("导出报表");
 			setAlwaysOnTop(true);
-			setType(Type.POPUP);
+			setType(Type.UTILITY);
 			setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 			// 根据传来的Rectangle设置窗口位置
 	        int centerX = m_rectangle.x + m_rectangle.width / 2;
@@ -187,21 +205,33 @@ public class ExportBomsToFiles {
 								for (TCComponentBOMLine bomLine : m_bomLineList) {
 				            		String fileName = bomLine.getProperty("bl_item_item_id") + "-" + bomLine.getProperty("bl_rev_item_revision_id") + "-" + bomLine.getProperty("bl_item_object_name");
 				        			// 检查特殊字符
-				            		fileName = StringUtils.GetNameByString(fileName) + m_fileSuffixString;
-				        			File file = new File(filePath + "\\" + fileName);
+				            		String newFileName = StringUtils.GetNameByString(fileName) + m_fileSuffixString;
+				        			File file = new File(filePath + "\\" + newFileName);
 				                	if (file.exists()) {
-				                		JOptionPane.showMessageDialog(contentPane, "目录" + filePath + "下已存在文件" + fileName, "提示", JOptionPane.INFORMATION_MESSAGE);
+				                		JOptionPane.showMessageDialog(contentPane, "目录" + filePath + "下已存在文件" + newFileName, "提示", JOptionPane.INFORMATION_MESSAGE);
 				                		return;
 				                	} else {
 				                		pathAndBomMap.put(filePath + "\\" + fileName, bomLine);
 				                	}
 				            	}
 								
+								// 下载模板文件
+//								DownloadModelExcel();
+								
 								for (Entry<String, TCComponentBOMLine> entry : pathAndBomMap.entrySet()) {
 									// 组织数据
 							        BomToExcelBean bean = GetBomDataRecursive(entry.getValue(), true, m_ifGetAll, "");
 							        // 导出报表
-							        DoExport(bean, entry.getKey());
+							        DoExport(bean, entry.getKey() + m_fileSuffixString.replace("pdf", "xlsx"));
+							        // 转换PDF
+							        if (m_fileSuffixString.endsWith("pdf")) {
+							        	AsposeExcelUtils.ExcelToPDF(entry.getKey() + m_fileSuffixString.replace("pdf", "xlsx"), entry.getKey() + m_fileSuffixString);
+							        	// 删除TEMP下的excel
+										File file = new File(entry.getKey() + m_fileSuffixString.replace("pdf", "xlsx"));
+										if (file.exists() && file.isFile()) {
+											file.delete();
+										}
+							        }
 								}
 								
 								// 提示完成
@@ -237,25 +267,27 @@ public class ExportBomsToFiles {
 	}
 	
 	private void DoExport(BomToExcelBean bean, String filePath) throws Exception {
-		GetLicense();
+		CommonFunction.GetExcelLicense();
 		
 		Workbook wb = new Workbook(FileFormatType.XLSX);
 		Worksheet workSheet = wb.getWorksheets().get(0);
 		workSheet.setName("第一页");
 		Cells cells = workSheet.getCells();
 		// 设置表头
-		cells.get(1, 1).setValue("装配号");
-		cells.get(1, 2).setValue("标识");
-		cells.get(1, 3).setValue("代码编号");
-		cells.get(1, 4).setValue("名称");
-		cells.get(1, 5).setValue("材料");
-		cells.get(1, 6).setValue("数量");
-		cells.get(1, 7).setValue("长度");
-		cells.get(1, 8).setValue("宽度");
-		cells.get(1, 9).setValue("备注");
+		int m_columnNameListSize = m_columnNameList.size();
+		Style style = wb.createStyle();
+		style.getFont().setBold(true);
+//		style.setBackgroundColor(com.aspose.cells.Color.getLightGray());
+		style.setForegroundColor(com.aspose.cells.Color.getLightGray());
+		style.setPattern(BackgroundType.SOLID);
+		for (int i = 0; i < m_columnNameListSize; i++) {
+			Cell cell = cells.get(0, i);
+			cell.setValue(m_columnNameList.get(i));
+			cell.setStyle(style);
+		}
 		
 		// 设置内容
-		SetContent(cells, bean, 2);
+		SetContent(cells, bean, 1);
 		
 		// 设置列宽自动适应
         int columnCount = cells.getMaxColumn(); //获取表页的最大列数
@@ -270,20 +302,14 @@ public class ExportBomsToFiles {
 		wb.save(filePath);
 	}
 	
-	private void GetLicense() {
-		InputStream license = AsposeExcelUtils.class.getClassLoader().getResourceAsStream("\\license.xml"); // license路径
-		License aposeLic = new License();
-		aposeLic.setLicense(license);
-	}
-	
 	private int SetContent(Cells cells, BomToExcelBean bean, int rowIndex) {
-		cells.get(rowIndex, 1).setValue(bean.assemblyNumber);
-		cells.get(rowIndex, 2).setValue(bean.identification);
-		cells.get(rowIndex, 3).setValue(bean.prefix + bean.code);
-		cells.get(rowIndex, 4).setValue(bean.name);
-		cells.get(rowIndex, 5).setValue(bean.material);
-		cells.get(rowIndex, 6).setValue(bean.quantity);
-		cells.get(rowIndex, 9).setValue(bean.note);
+		String orderNumStr = bean.orderNum == 0 ? "" : bean.orderNum + "";
+		cells.get(rowIndex, 0).setValue(bean.prefix + orderNumStr);
+		int columnCount = bean.propertyValueList.size();
+		for (int i = 1; i < columnCount; i++) {
+			cells.get(rowIndex, i).setValue(bean.propertyValueList.get(i));
+		}
+		
 		if (bean.children == null || bean.children.size() == 0) {
 			return rowIndex;
 		} else {
@@ -300,20 +326,21 @@ public class ExportBomsToFiles {
 	
 	private BomToExcelBean GetBomDataRecursive(TCComponentBOMLine topBomLine, boolean ifFirst, boolean ifGetAll, String prefix) throws Exception {
 		BomToExcelBean bean = new BomToExcelBean();
-		String[] propertiesValue = topBomLine.getProperties(bean.properties);
-		bean.assemblyNumber = propertiesValue[0]; // 装配号
-		bean.identification = propertiesValue[1]; // 标识
-		bean.code = propertiesValue[2]; // 代号编码
-		bean.name = propertiesValue[3]; // 名称
-		bean.material = propertiesValue[4]; // 材料
-		String quantity = propertiesValue[5]; // 数量
-		bean.quantity = quantity;
-		if (quantity.equals("0") || quantity.equals("")) {
-			bean.quantity = propertiesValue[6]; // 数量
-		}
-		bean.note = propertiesValue[7]; // 备注
+		String[] strings = new String[m_propertyNameList.size()];
+		m_propertyNameList.toArray(strings);
+		String[] propertiesValue = topBomLine.getProperties(strings);
+		String orderNumStr = propertiesValue[0].equals("") ? "0" : propertiesValue[0];
+		String regEx="[^0-9]";
+    	Pattern p = Pattern.compile(regEx); 
+    	Matcher m = p.matcher(orderNumStr);
+    	orderNumStr = m.replaceAll("").trim();
+    	bean.orderNum = Integer.parseInt(orderNumStr);
+    	bean.propertyValueList = Arrays.asList(propertiesValue);
+		
+		// 设置空格以区分层级
 		if (!ifFirst) {
 			bean.prefix += prefix + "   ";
+//			bean.prefix += prefix + "";
 		}
 		if (!topBomLine.hasChildren()) {
 			return bean;

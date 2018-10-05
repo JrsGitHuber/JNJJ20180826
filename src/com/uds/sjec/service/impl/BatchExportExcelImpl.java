@@ -10,11 +10,13 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
 import com.teamcenter.rac.aif.kernel.AIFComponentContext;
 import com.teamcenter.rac.kernel.TCComponentBOMLine;
 import com.teamcenter.rac.kernel.TCComponentDataset;
@@ -25,6 +27,7 @@ import com.teamcenter.rac.kernel.TCSession;
 import com.teamcenter.rac.kernel.TCTypeService;
 import com.teamcenter.rac.util.MessageBox;
 import com.uds.sjec.bean.ProductionTableBean;
+import com.uds.sjec.common.CommonFunction;
 import com.uds.sjec.service.IBatchExportExcelService;
 import com.uds.sjec.view.UDSJProcessBar;
 
@@ -126,6 +129,12 @@ public class BatchExportExcelImpl implements IBatchExportExcelService {
 				FillCell(sheet, 1 + i + (i / 22) * 5, 4, productonTableList.get(i).name); // 名称
 				FillCell(sheet, 1 + i + (i / 22) * 5, 6, productonTableList.get(i).material); // 材料
 				FillCell(sheet, 1 + i + (i / 22) * 5, 7, productonTableList.get(i).quantity); // 数量
+				String lengthStr = productonTableList.get(i).length;
+				lengthStr = CommonFunction.RemoveEndZero(lengthStr);
+				FillCell(sheet, 1 + i + (i / 22) * 5, 8, lengthStr); // 长度
+				String widthStr = productonTableList.get(i).width;
+				widthStr = CommonFunction.RemoveEndZero(widthStr);
+				FillCell(sheet, 1 + i + (i / 22) * 5, 9, widthStr); // 宽度
 				FillCell(sheet, 1 + i + (i / 22) * 5, 10, productonTableList.get(i).note); // 备注
 			}
 			// 关闭流
@@ -236,20 +245,37 @@ public class BatchExportExcelImpl implements IBatchExportExcelService {
 				TCComponentBOMLine bomLine = (TCComponentBOMLine) context.getComponent();
 				ProductionTableBean bean = new ProductionTableBean();
 				try {
-					String[] productionInfo = bomLine.getProperties(new String[] { "S2_bl_asmno", "bl_rev_s2_Rev_Manu_Type",
-							"bl_item_item_id", "bl_item_object_name", "bl_rev_s2_Rev_Matl", "Usage_Quantity", "S2_bl_ylgsl",
-							"bl_item_s2_Note" });
+					String[] propertyNames = new String[] {
+							"S2_bl_asmno",
+							"bl_rev_s2_Rev_Manu_Type",
+							"bl_item_item_id",
+							"bl_item_object_name",
+							"bl_rev_s2_Rev_Matl", "bl_item_s2_Spec",
+							"Usage_Quantity",
+							"S2_bl_ylgsl",
+							"bl_item_s2_Note",
+							"bl_rev_s2_Rev_Weight",
+							"bl_item_s2_Asm_Weight" };
+					String[] productionInfo = bomLine.getProperties(propertyNames);
 					bean.assemblyNumber = productionInfo[0];// 装配号
 					bean.identification = productionInfo[1];// 标识
 					bean.code = productionInfo[2];// 代号编码
 					bean.name = productionInfo[3];// 名称
-					bean.material = productionInfo[4];// 材料
-					String quantity = productionInfo[5];// 数量
+					String material = "";
+					if (productionInfo[4].equals(productionInfo[5])) {
+						material = productionInfo[4];
+					} else {
+						material = productionInfo[4] + " " + productionInfo[5];
+					}
+					bean.material = material;// 材料
+					String quantity = productionInfo[6];// 数量
 					bean.quantity = quantity;
 					if (quantity.equals("0") || quantity.equals("")) {
-						bean.quantity = productionInfo[6];// 数量
+						bean.quantity = productionInfo[7];// 数量
 					}
-					bean.note = productionInfo[7];// 备注
+					bean.note = productionInfo[8];// 备注
+					bean.length = productionInfo[9];// 长度
+					bean.width = productionInfo[10];// 宽度
 					bean.bomLine = bomLine;
 				} catch (TCException e) {
 					bar.setVisible(false);
@@ -274,20 +300,37 @@ public class BatchExportExcelImpl implements IBatchExportExcelService {
 			for (TCComponentBOMLine tempBomLine : sortedBomLines) {
 				try {
 					ProductionTableBean bean = new ProductionTableBean();
-					String[] productionInfo = tempBomLine.getProperties(new String[] { "S2_bl_asmno", "bl_rev_s2_Rev_Manu_Type",
-							"bl_item_item_id", "bl_item_object_name", "bl_rev_s2_Rev_Matl", "Usage_Quantity", "S2_bl_ylgsl",
-							"bl_item_s2_Note" });
+					String[] propertyNames = new String[] {
+							"S2_bl_asmno",
+							"bl_rev_s2_Rev_Manu_Type",
+							"bl_item_item_id",
+							"bl_item_object_name",
+							"bl_rev_s2_Rev_Matl", "bl_item_s2_Spec",
+							"Usage_Quantity",
+							"S2_bl_ylgsl",
+							"bl_item_s2_Note",
+							"bl_rev_s2_Rev_Weight",
+							"bl_item_s2_Asm_Weight" };
+					String[] productionInfo = tempBomLine.getProperties(propertyNames);
 					bean.assemblyNumber = productionInfo[0];// 装配号
 					bean.identification = productionInfo[1];// 标识
 					bean.code = productionInfo[2];// 代号编码
 					bean.name = productionInfo[3];// 名称
-					bean.material = productionInfo[4];// 材料
-					String quantity = productionInfo[5];// 数量
+					String material = "";
+					if (productionInfo[4].equals(productionInfo[5])) {
+						material = productionInfo[4];
+					} else {
+						material = productionInfo[4] + " " + productionInfo[5];
+					}
+					bean.material = material;// 材料
+					String quantity = productionInfo[6];// 数量
 					bean.quantity = quantity;
 					if (quantity.equals("0") || quantity.equals("")) {
-						bean.quantity = productionInfo[6];// 数量
+						bean.quantity = productionInfo[7];// 数量
 					}
-					bean.note = productionInfo[7];// 备注
+					bean.note = productionInfo[8];// 备注
+					bean.length = productionInfo[9];// 长度
+					bean.width = productionInfo[10];// 宽度
 					bean.bomLine = tempBomLine;
 					productonTableList.add(bean);
 				} catch (TCException e) {

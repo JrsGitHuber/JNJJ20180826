@@ -17,6 +17,25 @@ public class ProductionTableBean {
 	public String material = ""; // 材料
 	public String quantity = ""; // 数量
 	public String note = ""; // 备注
+	public String length = ""; // 长度
+	public String width = ""; // 宽度
+	
+	public String getLength() {
+		return length;
+	}
+
+	public void setLength(String length) {
+		this.length = length;
+	}
+
+	public String getWidth() {
+		return width;
+	}
+
+	public void setWidth(String width) {
+		this.width = width;
+	}
+
 	public TCComponentBOMLine bomLine;
 
 	public String getAssemblyNumber() {

@@ -1,10 +1,6 @@
 package com.uds.sjec.service.impl;
 
-import java.io.BufferedInputStream;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
@@ -16,32 +12,37 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import javax.swing.JButton;
 import javax.swing.table.DefaultTableModel;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.xssf.usermodel.XSSFSheet;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
 import com.teamcenter.rac.aif.AIFDesktop;
 import com.teamcenter.rac.aif.kernel.AIFComponentContext;
 import com.teamcenter.rac.kernel.TCComponent;
 import com.teamcenter.rac.kernel.TCComponentBOMLine;
 import com.teamcenter.rac.kernel.TCComponentBOMWindow;
 import com.teamcenter.rac.kernel.TCComponentItem;
+import com.teamcenter.rac.kernel.TCComponentItemType;
 import com.teamcenter.rac.kernel.TCComponentQuery;
 import com.teamcenter.rac.kernel.TCComponentTask;
 import com.teamcenter.rac.kernel.TCException;
 import com.teamcenter.rac.kernel.TCPreferenceService;
 import com.teamcenter.rac.kernel.TCSession;
 import com.teamcenter.rac.util.MessageBox;
+import com.uds.Jr.utils.TCBomUtil;
 import com.uds.common.utils.MathUtil;
 import com.uds.sjec.bean.CalculationTableBean;
 import com.uds.sjec.bean.CfgListInfoTableBean;
 import com.uds.sjec.bean.ParamReadedBean;
+import com.uds.sjec.common.CommonFunction;
 import com.uds.sjec.common.ConstDefine;
 import com.uds.sjec.service.ICfgManagementService;
 import com.uds.sjec.utils.ItemUtil;
@@ -58,6 +59,8 @@ public class CfgManagementServiceImpl implements ICfgManagementService {
 	private List<CfgListInfoTableBean> cfgListInfoTableList;
 	private List<ParamReadedBean> paramReadedTableList;
 	private List<CalculationTableBean> calculationList;
+	
+	private TCComponentQuery m_query_item;
 
 	/**
 	 * 搜素配置单
@@ -409,43 +412,67 @@ public class CfgManagementServiceImpl implements ICfgManagementService {
 			JButton button_BOMConfiguration) {
 		calculationList = new ArrayList<CalculationTableBean>();
 		try {
-			// 写入
-			BufferedInputStream inputStream = new BufferedInputStream(new FileInputStream(excelpath));
-			XSSFWorkbook workbook = new XSSFWorkbook(inputStream);
-			XSSFSheet paramSheet = workbook.getSheet("参数表");
-			for (int i = 0; i < paramReadedList.size(); i++) {
-				for (int j = 2; j < paramSheet.getLastRowNum() + 1; j++) {
-					Cell paramCodeCell = paramSheet.getRow(j).getCell(2);
-					paramCodeCell.setCellType(Cell.CELL_TYPE_STRING);
-					if (paramCodeCell.toString().equals(paramReadedList.get(i).paramCode)) {
-						Cell paramVauleCell = paramSheet.getRow(j).getCell(3);
-						paramVauleCell.setCellValue(paramReadedList.get(i).paramValue);
-						break;
-					}
+			CommonFunction.GetExcelLicense();
+			
+			com.aspose.cells.Workbook wb = new com.aspose.cells.Workbook(excelpath);
+			com.aspose.cells.WorksheetCollection worksheets =  wb.getWorksheets();
+			com.aspose.cells.Worksheet worksheet = worksheets.get("参数表");
+	        if (worksheet == null) {
+	        	MessageBox.post("在表格模板中没有找到 参数表 页", "出错", MessageBox.ERROR);
+				return;
+	        }
+	        
+	        // 往参数表页写入数据
+	        com.aspose.cells.Cells cells = worksheet.getCells();
+	        Map<String, Integer> cellMap = new HashMap<String, Integer>();
+	        for (int rowNum = 2; rowNum < 65536; rowNum++) {
+	        	com.aspose.cells.Cell cell = cells.get(rowNum, 2);
+	        	String cellValue = cell == null ? "" : cell.getStringValue();
+	        	if (cellValue.equals("")) {
+	        		break;
+	        	}
+	        	
+	        	if (!cellMap.containsKey(cellValue)) {
+	        		cellMap.put(cellValue, rowNum);
+	        	}
+	        }
+	        for (int i = 0; i < paramReadedList.size(); i++) {
+	        	ParamReadedBean bean = paramReadedList.get(i);
+	        	if (cellMap.containsKey(bean.paramCode)) {
+	        		int rowNum = cellMap.get(bean.paramCode);
+	        		com.aspose.cells.Cell cell = cells.get(rowNum, 3);
+	        		cell.setValue(bean.paramValue);
+	        	}
+	        }
+	        
+			// 获取计算项列表页的数据
+	        com.aspose.cells.CalculationOptions obj = new com.aspose.cells.CalculationOptions();
+			obj.setIgnoreError(true);
+			worksheet = worksheets.get("计算项列表");
+			if (worksheet == null) {
+	        	MessageBox.post("在表格模板中没有找到 计算项列表 页", "出错", MessageBox.ERROR);
+				return;
+	        }
+			worksheet.calculateFormula(obj, true);
+			cells = worksheet.getCells();
+			for (int rowNum = 4; rowNum < 65536; rowNum++) {
+				com.aspose.cells.Cell cell = cells.get(rowNum, 1);
+				com.aspose.cells.Cell cell1 = cells.get(rowNum, 4);
+				String cellValue = cell == null ? "" : cell.getStringValue();
+				String cell1Value = cell1 == null ? "" : cell1.getStringValue();
+				if (cellValue.equals("") || cell1Value.equals("")) {
+					break;
 				}
-			}
-			FileOutputStream fileOut = new FileOutputStream(excelpath);
-			workbook.write(fileOut);
-			fileOut.close();
-			// 读取计算项列表，写入数据库
-			inputStream = new BufferedInputStream(new FileInputStream(excelpath));
-			workbook = new XSSFWorkbook(inputStream);
-			XSSFSheet calculationSheet = workbook.getSheet("计算项列表");
-			for (int i = 4; i < calculationSheet.getLastRowNum() + 1; i++) {
+				
 				CalculationTableBean bean = new CalculationTableBean();
 				bean.configID = configListId;
-				Cell cell = calculationSheet.getRow(i).getCell(1);
-				cell.setCellType(Cell.CELL_TYPE_STRING);
-				bean.conditionCode = cell.toString();
-				cell = calculationSheet.getRow(i).getCell(4);
-				cell.setCellType(Cell.CELL_TYPE_STRING);
-				bean.calculationValue = cell.toString();
-
+				bean.conditionCode = cellValue;
+				bean.calculationValue = cell1Value;
+				
 				calculationList.add(bean);
 			}
-			fileOut = new FileOutputStream(excelpath);
-			workbook.write(fileOut);
-			fileOut.close();
+			wb.save(excelpath);
+			
 			Class.forName(ConstDefine.TCDB_CLASSNAME);
 			connection = DriverManager.getConnection(ConstDefine.TCDB_URL, ConstDefine.TCDB_USER, ConstDefine.TCDB_PASSWORD);
 			if (connection == null) {
@@ -471,19 +498,7 @@ public class CfgManagementServiceImpl implements ICfgManagementService {
 			} else {
 				MessageBox.post("计算项列表没有数据。", "参数计算", MessageBox.ERROR);
 			}
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-			MessageBox.post(e.getMessage(), "参数计算", MessageBox.ERROR);
-			return;
-		} catch (IOException e) {
-			e.printStackTrace();
-			MessageBox.post(e.getMessage(), "参数计算", MessageBox.ERROR);
-			return;
-		} catch (SQLException e) {
-			e.printStackTrace();
-			MessageBox.post(e.getMessage(), "参数计算", MessageBox.ERROR);
-			return;
-		} catch (ClassNotFoundException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 			MessageBox.post(e.getMessage(), "参数计算", MessageBox.ERROR);
 			return;
@@ -611,11 +626,155 @@ public class CfgManagementServiceImpl implements ICfgManagementService {
 		return computationMap;
 	}
 
+	@Override
+	public void configurantionCalculated(TCComponentBOMLine superTopBOMLine, TCComponentBOMLine configListTopBomLine,
+			Map<String, String> paramMap, Map<String, String> computationMap, String configListId, JButton button_BOMInstantiation) {
+		try {
+			m_query_item = QueryUtil.getTCComponentQuery("Item...");
+			ClearBomLine(configListTopBomLine);
+			RecursiveToGetBom(superTopBOMLine, configListTopBomLine, paramMap, computationMap, configListId);
+		} catch (Exception e) {
+			MessageBox.post("配置计算出错：" + e.getMessage(), "配置计算", MessageBox.INFORMATION);
+			e.printStackTrace();
+			return;
+		} finally {
+			TCBomUtil.CloseWindow(superTopBOMLine);
+			TCBomUtil.CloseWindow(configListTopBomLine);
+		}
+		
+		MessageBox.post("配置计算完成", "配置计算", MessageBox.INFORMATION);
+		button_BOMInstantiation.setEnabled(false);
+	}
+	
+	private void RecursiveToGetBom(TCComponentBOMLine superTopBomLine, TCComponentBOMLine topBomLine, Map<String, String> paramMap,
+			Map<String, String> computationMap, String configListId) throws Exception {
+		if (!superTopBomLine.hasChildren()) {
+			return;
+		}
+		
+		AIFComponentContext[] children = superTopBomLine.getChildren();		
+		for (AIFComponentContext context : children) {
+			TCComponentBOMLine superBomLine = (TCComponentBOMLine) context.getComponent();
+			if (JudgeIfAdd(superBomLine, paramMap)) {
+				// 获取规则
+				String tempValue = superBomLine.getProperty("bl_item_s2_C1");
+//				if (tempValue.equals("")) {
+//					continue;
+//				}
+				List<String> ruleList = tempValue.equals("") ? new ArrayList<String>() : Arrays.asList(tempValue.split("%"));
+				Map<String, String> propertyMap = new HashMap<String, String>();
+				String item_id = superBomLine.getProperty("bl_item_item_id");
+				for (String rule : ruleList) {
+					if (rule.startsWith("U")) {
+						item_id = item_id + "-" + configListId;
+					} else if (rule.startsWith("C")) {
+						if (computationMap.containsKey(rule)) {
+							item_id = item_id + "-" + configListId;
+							propertyMap.put("S2_bl_Note", computationMap.get(rule));
+						} else {
+							throw new Exception("没有找到计算值" + rule);
+						}
+					} else if (rule.startsWith("F")) {
+						if (computationMap.containsKey(rule)) {
+							propertyMap.put("Usage_Quantity", computationMap.get(rule));
+						} else {
+							throw new Exception("没有找到计算值" + rule);
+						}
+					} else if (rule.startsWith("G")) {
+						if (computationMap.containsKey(rule)) {
+							item_id = item_id + "-" + computationMap.get(rule);
+						} else {
+							throw new Exception("没有找到计算值" + rule);
+						}
+					} else {
+						System.out.println("等待添加" + rule + "的处理规则");
+					}
+				}
+				
+				TCComponentItem item = GetItem(superBomLine, item_id);
+				TCComponentBOMLine newBomLine = topBomLine.add(item, item.getLatestItemRevision(), null, false);
+				if (!item_id.equals(superBomLine.getProperty("bl_item_item_id"))) {
+					// 清空topBomLine的内容
+					ClearBomLine(newBomLine);
+					RecursiveToGetBom(superBomLine, newBomLine, paramMap, computationMap, configListId);
+				}
+				
+				if (propertyMap.size() != 0) {
+					newBomLine.setProperties(propertyMap);
+				}
+			}
+		}
+	}
+
+	private TCComponentItem GetItem(TCComponentBOMLine bomLine, String item_id) throws Exception {
+		TCComponent[] searchResult = QueryUtil.getSearchResult(m_query_item, new String[] { "零组件 ID" }, new String[] { item_id });
+		if (searchResult.length == 0) {
+			// 不存在需要创建item_Loss
+			String itemTypeStr = bomLine.getItem().getType();
+			TCComponentItemType itemType = (TCComponentItemType) ConstDefine.TC_SESSION.getTypeComponent(itemTypeStr);
+			String newRev = itemType.getNewRev(null);
+			String type = itemTypeStr;
+			String name = bomLine.getProperty("bl_item_object_name");
+			String desc = "";
+			return itemType.create(item_id, newRev, type, name, desc, null);
+		} else if (searchResult.length != 1) {
+			throw new Exception("通过ID " + item_id + " 找到多个Item");
+		} else {
+			return (TCComponentItem)searchResult[0];
+		}
+		
+	}
+
+	private void ClearBomLine(TCComponentBOMLine topBomLine) throws Exception {
+		if(topBomLine.hasChildren()){
+			AIFComponentContext[] children = topBomLine.getChildren();
+			for (AIFComponentContext context : children) {
+				TCComponentBOMLine bomLine = (TCComponentBOMLine) context.getComponent();
+				bomLine.cut();
+			}
+		}
+	}
+
+	private boolean JudgeIfAdd(TCComponentBOMLine bomLine, Map<String, String> paramMap) throws Exception {
+		String[] proertyValues = bomLine.getProperties(new String[] { "S2_bl_vc", "S2_bl_vc1", "S2_bl_vc2", "S2_bl_vc3", "S2_bl_vc4" });
+		String variableCondition = "";
+		for (String value : proertyValues) {
+			variableCondition += value;
+		}
+		if (variableCondition.equals("")) {
+			return true;
+		}
+		
+		for (String key : paramMap.keySet()) {
+			Pattern pattern = Pattern.compile("\\W{0,1}" + key + "\\W");
+			Matcher matcher = pattern.matcher(variableCondition);
+			while (matcher.find()) {
+				String findStr = matcher.group();
+				String tempStr = "";
+				String tempStr1 = "";
+				if (variableCondition.startsWith(findStr)) {
+					tempStr = key + findStr.charAt(findStr.length()-1);
+					tempStr1 = paramMap.get(key) + findStr.charAt(findStr.length()-1);
+				} else {
+					tempStr = findStr.charAt(0) + key + findStr.charAt(findStr.length()-1);
+					tempStr1 = findStr.charAt(0) + paramMap.get(key) + findStr.charAt(findStr.length()-1);
+				}
+				variableCondition = variableCondition.replace(tempStr, tempStr1);
+			}
+			
+//			String keyStr = key + "==";
+//			if (variableCondition.contains(keyStr)) {
+//				variableCondition = variableCondition.replaceAll(keyStr, paramMap.get(key)+"==");
+//			}
+		}
+		variableCondition = variableCondition.replaceAll("!=", "!==");
+		return MathUtil.PassCondition(variableCondition);
+	}
+	
 	/**
 	 * 配置计算
 	 */
-	@Override
-	public void configurantionCalculated(TCComponentBOMLine superTopBOMLine, TCComponentBOMLine configListTopBomLine,
+	public void configurantionCalculated_pre(TCComponentBOMLine superTopBOMLine, TCComponentBOMLine configListTopBomLine,
 			Map<String, String> paramMap, Map<String, String> computationMap, String configListId, JButton button_BOMInstantiation) {
 		try {
 			AIFComponentContext[] superBOMContexts = superTopBOMLine.getChildren();
@@ -627,7 +786,6 @@ public class CfgManagementServiceImpl implements ICfgManagementService {
 					if (!computationCode.equals("")) {
 						String[] computationCodes = computationCode.split("%");
 						if (computationCodes.length > 0) {
-							// TODO ?
 							// 看是否U开头要换配置单号,再处理其他 
 							for (String childComputationCode : computationCodes) {
 								if (childComputationCode.startsWith("U")) {
@@ -722,7 +880,7 @@ public class CfgManagementServiceImpl implements ICfgManagementService {
 				if (!computationCode.equals("")) {
 					String[] computationCodes = computationCode.split("%");
 					if (computationCodes.length > 0) {
-						// TODO Jr 换号的规则在此处进行添加
+						// Jr 换号的规则在此处进行添加
 						// 看是否U开头要换配置单号,再处理其他
 						for (String childComputationCode : computationCodes) {
 							if (childComputationCode.startsWith("U")) {
@@ -765,7 +923,7 @@ public class CfgManagementServiceImpl implements ICfgManagementService {
 						}
 						// 其他开头，不换号
 						for (String childComputationCode : computationCodes) {
-							// TODO Jr 除了换号的，其他的规则在此处进行添加
+							// Jr 除了换号的，其他的规则在此处进行添加
 							if (childComputationCode.startsWith("A")) {
 								String note1 = tempBomLine.getProperty("S2_bl_vc");
 								String note2 = tempBomLine.getProperty("S2_bl_vc1");
@@ -791,6 +949,11 @@ public class CfgManagementServiceImpl implements ICfgManagementService {
 									// System.out.println(computationMap.get(childComputationCode));
 									// parentBOMLine.setProperty("bl_item_s2_Note",
 									// computationMap.get(childComputationCode));
+								}
+							} else if (childComputationCode.startsWith("F")) {
+								if (computationMap.containsKey(childComputationCode)) {
+									TCComponentBOMLine newBomLine = parentBOMLine.add((TCComponent) tempBomLine.getItem(), "");
+									newBomLine.setProperty("Usage_Quantity", computationMap.get(childComputationCode));
 								}
 							}
 						}
@@ -822,4 +985,5 @@ public class CfgManagementServiceImpl implements ICfgManagementService {
 			}
 		}
 	}
+	
 }

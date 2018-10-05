@@ -2,6 +2,9 @@ package com.uds.sjec.view;
 
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import com.teamcenter.rac.aif.kernel.AIFComponentContext;
 import com.teamcenter.rac.kernel.TCComponentBOMLine;
 import com.uds.common.exceptions.CalculateException;
@@ -149,27 +152,45 @@ public class BOMViewModel extends AbstractTreeTableModel implements TreeTableMod
 					ArrayList<TCComponentBOMLine> bomLineList = new ArrayList<TCComponentBOMLine>();
 					for (int i = 0; i < context.length; i++) {
 						TCComponentBOMLine bomLine = (TCComponentBOMLine) context[i].getComponent();
-						String note1 = bomLine.getProperty("S2_bl_vc");
-						String note2 = bomLine.getProperty("S2_bl_vc1");
-						String note3 = bomLine.getProperty("S2_bl_vc2");
-						String note4 = bomLine.getProperty("S2_bl_vc3");
-						String note5 = bomLine.getProperty("S2_bl_vc4");
-						String variableCondition = note1 + note2 + note3 + note4 + note5;
+						String[] proertyValues = bomLine.getProperties(new String[] { "S2_bl_vc", "S2_bl_vc1", "S2_bl_vc2", "S2_bl_vc3", "S2_bl_vc4" });
+						String variableCondition = "";
+						for (String value : proertyValues) {
+							variableCondition += value;
+						}
 						if (variableCondition.equals("")) {
 							bomLineList.add(bomLine);
 						} else {
 							for (String key : map.keySet()) {
-								String keyStr = key + "==";
-								if (variableCondition.contains(keyStr)) {
-									variableCondition = variableCondition.replaceAll(keyStr, map.get(key)+"==");
+								Pattern pattern = Pattern.compile("\\W{0,1}" + key + "\\W");
+								Matcher matcher = pattern.matcher(variableCondition);
+								while (matcher.find()) {
+									String findStr = matcher.group();
+									String tempStr = "";
+									String tempStr1 = "";
+									if (variableCondition.startsWith(findStr)) {
+										tempStr = key + findStr.charAt(findStr.length()-1);
+										tempStr1 = map.get(key) + findStr.charAt(findStr.length()-1);
+									} else {
+										tempStr = findStr.charAt(0) + key + findStr.charAt(findStr.length()-1);
+										tempStr1 = findStr.charAt(0) + map.get(key) + findStr.charAt(findStr.length()-1);
+									}
+//									tempStr = tempStr.replace("(", "\\(");
+//									tempStr1 = tempStr1.replaceAll("(", "\\(");
+									variableCondition = variableCondition.replace(tempStr, tempStr1);
 								}
 							}
+//							for (String key : map.keySet()) {
+//								String keyStr = key + "==";
+//								if (variableCondition.contains(keyStr)) {
+//									variableCondition = variableCondition.replaceAll(keyStr, map.get(key)+"==");
+//								}
+//							}
+							
 							try {
 								if (MathUtil.PassCondition(variableCondition)) {
 									bomLineList.add(bomLine);
 								}
 							} catch (CalculateException e) {
-								// TODO Auto-generated catch block
 								e.printStackTrace();
 							}
 						}

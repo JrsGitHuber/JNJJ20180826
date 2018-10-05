@@ -352,6 +352,7 @@ public class ImportProjectImpl implements IImportProjectService {
 			TCComponentItem newItem = item_type.create(itemID, newRev, itemType, itemName, description, null); // itemId已存在就会报错
 			return newItem;
 		} catch (Exception e) {
+			e.printStackTrace();
 			return null;
 		}
 	}

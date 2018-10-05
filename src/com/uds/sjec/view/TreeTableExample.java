@@ -40,6 +40,8 @@ package com.uds.sjec.view;
  * maintenance of any nuclear facility.
  */
 
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.Map;
@@ -50,6 +52,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
 
 import com.teamcenter.rac.kernel.TCComponentBOMLine;
+import com.uds.sjec.controler.CfgManagementControler;
 
 /**
  * A TreeTable example, showing a JTreeTable, operating on the local file
@@ -62,30 +65,65 @@ import com.teamcenter.rac.kernel.TCComponentBOMLine;
 
 public class TreeTableExample {
 
-	JFrame frame;
-
-	@SuppressWarnings("deprecation")
+	private static JFrame frame;
+	
 	public TreeTableExample(final JButton button_BOMConfiguration, final JButton button_configurationCaculate, TCComponentBOMLine bomLine,
 			String configListId, Map<String, String> map) {
 		frame = new JFrame("配置预览-" + configListId);
 		frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 		JTreeTable treeTable = new JTreeTable(new BOMViewModel(bomLine, map));
 		treeTable.getColumnModel().getColumn(0).setPreferredWidth(200);
-		frame.getContentPane().add(new JScrollPane(treeTable));
+		JScrollPane pane = new JScrollPane(treeTable);
+		frame.getContentPane().add(pane);
 		frame.setBounds(100, 100, 1287, 675);
-		frame.show();
+		frame.setVisible(true);
 		frame.setLocationRelativeTo(null);
+		frame.setAlwaysOnTop(true);
+		pane.addMouseListener(new MouseListener() {
+
+            @Override
+            public void mouseClicked(MouseEvent e) {
+            	frame.setAlwaysOnTop(false);
+            }
+
+            @Override
+            public void mousePressed(MouseEvent e) {
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent e) {
+            }
+
+            @Override
+            public void mouseEntered(MouseEvent e) {
+            	
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+            }
+            
+        });
 		frame.addWindowListener(new WindowAdapter() {
 			public void windowClosing(WindowEvent we) {
-				int n = JOptionPane.showConfirmDialog(null, "是否进行配置计算", "提示", JOptionPane.YES_NO_OPTION);
+				frame.setAlwaysOnTop(true);
+				int n = JOptionPane.showConfirmDialog(frame.getContentPane(), "是否进行配置计算", "提示", JOptionPane.YES_NO_OPTION);
 				if (n == 0) {
 					button_BOMConfiguration.setEnabled(false);
 					button_configurationCaculate.setEnabled(true);
 					frame.dispose();
-				} else if (n == 1) {
-					return;
+				} else {
+					frame.setAlwaysOnTop(false);
 				}
+				
+				CfgManagementControler.SetFrameShow();
 			}
 		});
+	}
+	
+	public static void SetAlwaysOnTop(boolean ifOnTop) {
+		if (frame != null) {
+			frame.setAlwaysOnTop(ifOnTop);
+		}
 	}
 }

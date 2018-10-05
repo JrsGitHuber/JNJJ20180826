@@ -7,10 +7,9 @@ import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 
-import com.teamcenter.rac.aif.AIFDesktop;
-import com.teamcenter.rac.aif.AbstractAIFUIApplication;
 import com.teamcenter.rac.aif.kernel.InterfaceAIFComponent;
 import com.teamcenter.rac.util.MessageBox;
+import com.uds.sjec.common.CommonFunction;
 import com.uds.sjec.newcontroler.ExportBomsToFiles;
 
 public class NewSampleHandler extends AbstractHandler {
@@ -21,11 +20,12 @@ public class NewSampleHandler extends AbstractHandler {
 		System.out.println("----------------------------------");
 		System.out.println("Jar Time :  2018.08.19 10:17");
 		
-		AbstractAIFUIApplication application = AIFDesktop.getActiveDesktop().getCurrentApplication();
-		InterfaceAIFComponent[] selComps = application.getTargetComponents();
-		if (selComps != null && selComps.length != 0) {
-			System.out.println(selComps[0].getType());
+		CommonFunction.InitSomeConst();
+		if (!CommonFunction.m_errorMessage.equals("")) {
+			MessageBox.post(CommonFunction.m_errorMessage, "提示", MessageBox.INFORMATION);
+			return null;
 		}
+		InterfaceAIFComponent[] selComps = CommonFunction.GetTargetComponents();
 		
 		Shell TCShell = Display.getCurrent().getShells()[0];
 		Rectangle rectangle0 = TCShell.getBounds();
@@ -39,6 +39,13 @@ public class NewSampleHandler extends AbstractHandler {
 			} else if (commandID.equals("com.uds.sjec.commands.batchExportExcel")) {
 				ExportBomsToFiles process = new ExportBomsToFiles(rectangle);
 				process.DoTask(commandID, selComps, true);
+			} else if (commandID.equals("com.uds.sjec.commands.EditVariableCondition")) {
+				CommonFunction.GetDBMessage();
+				if (!CommonFunction.m_errorMessage.equals("")) {
+					MessageBox.post(CommonFunction.m_errorMessage, "提示", MessageBox.INFORMATION);
+					return null;
+				}
+				
 			}
 		} catch (Exception e) {
 			e.printStackTrace();

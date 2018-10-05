@@ -10,12 +10,12 @@ import com.uds.sjec.view.UDSJProcessBar;
 public interface IProductionTableService {
 
 	Boolean downloadDatasetToLocal(TCSession session, String datasetType, String datasetName, String nameReferences, String localFileName,
-			String localDirName, UDSJProcessBar bar);
+			String localDirName);
 
-	Boolean writeToExcel(TCComponentBOMLine topBomLine, List<ProductionTableBean> productonTableList, String localDirectory, UDSJProcessBar bar);
+	Boolean writeToExcel(TCComponentBOMLine topBomLine, List<ProductionTableBean> productonTableList, String localDirectory);
 
-	List<ProductionTableBean> getAndSortAllBOM(TCComponentBOMLine topBomLine, UDSJProcessBar bar);
+	List<ProductionTableBean> getAndSortAllBOM(TCComponentBOMLine topBomLine);
 
-	List<ProductionTableBean> getAndSortBOMOfOne(TCComponentBOMLine topBomLine, UDSJProcessBar bar);
+	List<ProductionTableBean> getAndSortBOMOfOne(TCComponentBOMLine topBomLine);
 
 }

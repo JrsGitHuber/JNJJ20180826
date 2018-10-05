@@ -15,7 +15,6 @@ import com.uds.sjec.service.IEditVariableConditionService;
 
 public class EditVariableConditionServiceImpl implements IEditVariableConditionService {
 	public static double THRESHOLD = 1.E-005D;
-	private Map<String, String> conditionMap;
 	private Map<String, String> paramCodeAndTypeMap;// 存储参数代号和参数类型
 
 	@Override
@@ -70,7 +69,7 @@ public class EditVariableConditionServiceImpl implements IEditVariableConditionS
 		return paramCodeAndTypeMap;
 	}
 
-	private Boolean PassCondition(String condition, Boolean notEmpty, Map<String, String> conditionMap) throws CalculateException {
+	private Boolean PassCondition(String condition, Boolean notEmpty, List<KeyValueBean> beanList) throws CalculateException {
 		condition = condition.replace(" ", "");
 		if ((condition.toLowerCase().equals("true")) || (condition.toLowerCase().equals("false"))) {
 			return Boolean.valueOf(Boolean.parseBoolean(condition));
@@ -79,26 +78,26 @@ public class EditVariableConditionServiceImpl implements IEditVariableConditionS
 		Matcher matcher = pattern.matcher(condition);
 		if ((matcher.find()) && (!matcher.group("path").isEmpty())) {
 			String matchValue = matcher.group("path");
-			String newPath = condition.replace("(" + matchValue + ")", PassCondition(matchValue, notEmpty, conditionMap) + "");
+			String newPath = condition.replace("(" + matchValue + ")", PassCondition(matchValue, notEmpty, beanList) + "");
 			if (newPath.equals(condition)) {
 				throw new CalculateException(condition, "failed to parse the calculated path. Die recursive.");
 			}
-			return PassCondition(newPath, notEmpty, conditionMap);
+			return PassCondition(newPath, notEmpty, beanList);
 		}
 		pattern = Pattern.compile("(?<path>[^()|&><=]+[><=]{1,2}[^()|&><=]+)");
 		matcher = pattern.matcher(condition);
 		if ((matcher.find()) && (!matcher.group("path").isEmpty())) {
 			String matchValue = matcher.group("path");
-			if (matchValue.contains(">")) {
-				conditionMap.put(matchValue.split(">")[0], matchValue.split(">")[1]);
-			} else if (matchValue.contains("<")) {
-				conditionMap.put(matchValue.split("<")[0], matchValue.split("<")[1]);
-			} else if (matchValue.contains(">=")) {
-				conditionMap.put(matchValue.split(">=")[0], matchValue.split(">=")[1]);
+			if (matchValue.contains(">=")) {
+				beanList.add(new KeyValueBean(matchValue.split(">=")[0], matchValue.split(">=")[1]));
 			} else if (matchValue.contains("<=")) {
-				conditionMap.put(matchValue.split("<=")[0], matchValue.split("<=")[1]);
+				beanList.add(new KeyValueBean(matchValue.split("<=")[0], matchValue.split("<=")[1]));
+			} else if (matchValue.contains(">")) {
+				beanList.add(new KeyValueBean(matchValue.split(">")[0], matchValue.split(">")[1]));
+			} else if (matchValue.contains("<")) {
+				beanList.add(new KeyValueBean(matchValue.split("<")[0], matchValue.split("<")[1]));
 			} else if (matchValue.contains("==")) {
-				conditionMap.put(matchValue.split("==")[0], matchValue.split("==")[1]);
+				beanList.add(new KeyValueBean(matchValue.split("==")[0], matchValue.split("==")[1]));
 			}
 			if (matchValue.contains("<=")) {
 				String[] nums = matchValue.split("<=");
@@ -108,14 +107,14 @@ public class EditVariableConditionServiceImpl implements IEditVariableConditionS
 				if ((CheckUtil.IsDouble(nums[0]).booleanValue()) && (CheckUtil.IsDouble(nums[1]).booleanValue())) {
 					String path = condition.replaceAll("(.*?)" + Pattern.quote(matchValue) + "(.*)", "$1"
 							+ (Double.parseDouble(nums[0]) <= Double.parseDouble(nums[1])) + "$2");
-					return PassCondition(path, notEmpty, conditionMap);
+					return PassCondition(path, notEmpty, beanList);
 				}
 				String newPath = condition.replaceAll("(.*?)" + Pattern.quote(matchValue) + "(.*)", "$1"
 						+ (nums[0].compareTo(nums[1]) <= 0) + "$2");
 				if (newPath.equals(condition)) {
 					throw new CalculateException(condition, "failed to parse the calculated path. Die recursive.");
 				}
-				return PassCondition(newPath, notEmpty, conditionMap);
+				return PassCondition(newPath, notEmpty, beanList);
 			}
 			if (matchValue.contains(">=")) {
 				String[] nums = matchValue.split(">=");
@@ -125,14 +124,14 @@ public class EditVariableConditionServiceImpl implements IEditVariableConditionS
 				if ((CheckUtil.IsDouble(nums[0]).booleanValue()) && (CheckUtil.IsDouble(nums[1]).booleanValue())) {
 					String path = condition.replaceAll("(.*?)" + Pattern.quote(matchValue) + "(.*)", "$1"
 							+ (Double.parseDouble(nums[0]) >= Double.parseDouble(nums[1])) + "$2");
-					return PassCondition(path, notEmpty, conditionMap);
+					return PassCondition(path, notEmpty, beanList);
 				}
 				String newPath = condition.replaceAll("(.*?)" + Pattern.quote(matchValue) + "(.*)", "$1"
 						+ (nums[0].compareTo(nums[1]) >= 0) + "$2");
 				if (newPath.equals(condition)) {
 					throw new CalculateException(condition, "failed to parse the calculated path. Die recursive.");
 				}
-				return PassCondition(newPath, notEmpty, conditionMap);
+				return PassCondition(newPath, notEmpty, beanList);
 			}
 			if (matchValue.contains("==")) {
 				String[] nums = matchValue.split("==");
@@ -142,13 +141,13 @@ public class EditVariableConditionServiceImpl implements IEditVariableConditionS
 				if ((CheckUtil.IsDouble(nums[0]).booleanValue()) && (CheckUtil.IsDouble(nums[1]).booleanValue())) {
 					String path = condition.replaceAll("(.*?)" + Pattern.quote(matchValue) + "(.*)",
 							"$1" + AreEqual(Double.parseDouble(nums[0]), Double.parseDouble(nums[1])) + "$2");
-					return PassCondition(path, notEmpty, conditionMap);
+					return PassCondition(path, notEmpty, beanList);
 				}
 				String newPath = condition.replaceAll("(.*?)" + Pattern.quote(matchValue) + "(.*)", "$1" + nums[0].equals(nums[1]) + "$2");
 				if (newPath.equals(condition)) {
 					throw new CalculateException(condition, "failed to parse the calculated path. Die recursive.");
 				}
-				return PassCondition(newPath, notEmpty, conditionMap);
+				return PassCondition(newPath, notEmpty, beanList);
 			}
 			if (matchValue.contains(">")) {
 				String[] nums = matchValue.split(">");
@@ -158,14 +157,14 @@ public class EditVariableConditionServiceImpl implements IEditVariableConditionS
 				if ((CheckUtil.IsDouble(nums[0]).booleanValue()) && (CheckUtil.IsDouble(nums[1]).booleanValue())) {
 					String path = condition.replaceAll("(.*?)" + Pattern.quote(matchValue) + "(.*)", "$1"
 							+ (Double.parseDouble(nums[0]) > Double.parseDouble(nums[1])) + "$2");
-					return PassCondition(path, notEmpty, conditionMap);
+					return PassCondition(path, notEmpty, beanList);
 				}
 				String newPath = condition.replaceAll("(.*?)" + Pattern.quote(matchValue) + "(.*)", "$1" + (nums[0].compareTo(nums[1]) > 0)
 						+ "$2");
 				if (newPath.equals(condition)) {
 					throw new CalculateException(condition, "failed to parse the calculated path. Die recursive.");
 				}
-				return PassCondition(newPath, notEmpty, conditionMap);
+				return PassCondition(newPath, notEmpty, beanList);
 			}
 			if (matchValue.contains("<")) {
 				String[] nums = matchValue.split("<");
@@ -175,14 +174,14 @@ public class EditVariableConditionServiceImpl implements IEditVariableConditionS
 				if ((CheckUtil.IsDouble(nums[0]).booleanValue()) && (CheckUtil.IsDouble(nums[1]).booleanValue())) {
 					String path = condition.replaceAll("(.*?)" + Pattern.quote(matchValue) + "(.*)", "$1"
 							+ (Double.parseDouble(nums[0]) < Double.parseDouble(nums[1])) + "$2");
-					return PassCondition(path, notEmpty, conditionMap);
+					return PassCondition(path, notEmpty, beanList);
 				}
 				String newPath = condition.replaceAll("(.*?)" + Pattern.quote(matchValue) + "(.*)", "$1" + (nums[0].compareTo(nums[1]) < 0)
 						+ "$2");
 				if (newPath.equals(condition)) {
 					throw new CalculateException(condition, "failed to parse the calculated path. Die recursive.");
 				}
-				return PassCondition(newPath, notEmpty, conditionMap);
+				return PassCondition(newPath, notEmpty, beanList);
 			}
 		}
 		if (!notEmpty.booleanValue()) {
@@ -194,18 +193,18 @@ public class EditVariableConditionServiceImpl implements IEditVariableConditionS
 				if (newPath.equals(condition)) {
 					throw new CalculateException(condition, "failed to parse the calculated path. Die recursive.");
 				}
-				return PassCondition(newPath, notEmpty, conditionMap);
+				return PassCondition(newPath, notEmpty, beanList);
 			}
 		}
 		pattern = Pattern.compile("!(?<path>true|false|True|False)");
 		matcher = pattern.matcher(condition);
 		if ((matcher.find()) && (!matcher.group("path").isEmpty())) {
 			String matchValue = matcher.group("path");
-			String newPath = condition.replace("!" + matchValue, (!PassCondition(matchValue, notEmpty, conditionMap).booleanValue()) + "");
+			String newPath = condition.replace("!" + matchValue, (!PassCondition(matchValue, notEmpty, beanList).booleanValue()) + "");
 			if (newPath.equals(condition)) {
 				throw new CalculateException(condition, "failed to parse the calculated path. Die recursive.");
 			}
-			return PassCondition(newPath, notEmpty, conditionMap);
+			return PassCondition(newPath, notEmpty, beanList);
 		}
 		pattern = Pattern.compile("(?<path>(true|false|True|False)(&&|\\|\\|)(true|false|True|False))");
 		matcher = pattern.matcher(condition);
@@ -217,7 +216,7 @@ public class EditVariableConditionServiceImpl implements IEditVariableConditionS
 				if (newPath.equals(condition)) {
 					throw new CalculateException(condition, "failed to parse the calculated path. Die recursive.");
 				}
-				return PassCondition(newPath, notEmpty, conditionMap);
+				return PassCondition(newPath, notEmpty, beanList);
 			}
 			if (matchValue.contains("||")) {
 				String[] nums = matchValue.split("\\|\\|");
@@ -225,7 +224,7 @@ public class EditVariableConditionServiceImpl implements IEditVariableConditionS
 				if (newPath.equals(condition)) {
 					throw new CalculateException(condition, "failed to parse the calculated path. Die recursive.");
 				}
-				return PassCondition(newPath, notEmpty, conditionMap);
+				return PassCondition(newPath, notEmpty, beanList);
 			}
 		}
 		throw new CalculateException(condition, "failed to parse the calculated path.");
@@ -237,27 +236,38 @@ public class EditVariableConditionServiceImpl implements IEditVariableConditionS
 
 	@Override
 	public Boolean checkType(String variableCondition, Map<String, String> paramCodeAndTypeMap) throws CalculateException {
-		conditionMap = new HashMap<String, String>();
-		PassCondition(variableCondition, Boolean.valueOf(false), conditionMap);
-		for (String key : conditionMap.keySet()) {
-			if (paramCodeAndTypeMap.containsKey(key)) {
-				if (paramCodeAndTypeMap.get(key).equals("实数")) {
+		List<KeyValueBean> beanList = new ArrayList<KeyValueBean>();
+		PassCondition(variableCondition, Boolean.valueOf(false), beanList);
+		for (KeyValueBean bean : beanList) {
+			if (paramCodeAndTypeMap.containsKey(bean.key)) {
+				if (paramCodeAndTypeMap.get(bean.key).equals("实数")) {
 					try {
-						Double.parseDouble(conditionMap.get(key));
+						Double.parseDouble(bean.value);
 					} catch (Exception e) {
-						MessageBox.post(key + "的的参数类型为实数。", "编辑变量条件", MessageBox.ERROR);
+						MessageBox.post(bean.key + "的参数类型为实数。", "编辑变量条件", MessageBox.ERROR);
 						return false;
 					}
-				} else if (paramCodeAndTypeMap.get(key).equals("整数")) {
+				} else if (paramCodeAndTypeMap.get(bean.key).equals("整数")) {
 					try {
-						Integer.parseInt(conditionMap.get(key));
+						Integer.parseInt(bean.value);
 					} catch (Exception e) {
-						MessageBox.post(key + "的的参数类型为整数。", "编辑变量条件", MessageBox.ERROR);
+						MessageBox.post(bean.key + "的参数类型为整数。", "编辑变量条件", MessageBox.ERROR);
 						return false;
 					}
 				}
 			}
 		}
+		
 		return true;
+	}
+}
+
+class KeyValueBean {
+	String key = "";
+	String value = "";
+	
+	public KeyValueBean(String key, String value) {
+		this.key = key;
+		this.value = value;
 	}
 }

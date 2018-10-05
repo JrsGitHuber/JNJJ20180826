@@ -12,6 +12,8 @@ import javax.swing.border.EmptyBorder;
 import com.teamcenter.rac.util.MessageBox;
 
 public class TipsUI {
+	public static UI UI_FOR_CLOSE;
+	
 	UI ui;
 	Thread thread;
 	
@@ -19,6 +21,13 @@ public class TipsUI {
 	
 	public static void ShowUI(String title, Thread thread, Object parent){
 		new TipsUI(title, thread, parent);
+	}
+	
+	public static void CloseUI() {
+		if (UI_FOR_CLOSE != null) {
+			UI_FOR_CLOSE.dispose();
+			UI_FOR_CLOSE = null;
+		}
 	}
 	
 //	public static void CloseUI(String title, Thread thread, Object parent){
@@ -55,6 +64,7 @@ public class TipsUI {
 		new Thread() {
 			public void run() {
 				try {
+					UI_FOR_CLOSE = ui;
 					thread.start(); // 处理耗时任务
 					thread.join(); // 等待事务处理线程结束
 				} catch (Exception e) {

@@ -21,26 +21,26 @@ import javax.swing.ListSelectionModel;
 import javax.swing.border.LineBorder;
 import javax.swing.table.DefaultTableModel;
 
-import com.teamcenter.rac.aif.AIFDesktop;
-import com.teamcenter.rac.aif.AbstractAIFUIApplication;
+import com.teamcenter.rac.aif.kernel.AIFComponentContext;
 import com.teamcenter.rac.aif.kernel.InterfaceAIFComponent;
 import com.teamcenter.rac.aifrcp.AIFUtility;
+import com.teamcenter.rac.kernel.TCComponent;
 import com.teamcenter.rac.kernel.TCComponentBOMLine;
-import com.teamcenter.rac.kernel.TCComponentBOMWindow;
 import com.teamcenter.rac.kernel.TCComponentDataset;
 import com.teamcenter.rac.kernel.TCComponentFolder;
 import com.teamcenter.rac.kernel.TCComponentItem;
 import com.teamcenter.rac.kernel.TCComponentItemRevision;
+import com.teamcenter.rac.kernel.TCComponentQuery;
 import com.teamcenter.rac.kernel.TCException;
-import com.teamcenter.rac.kernel.TCSession;
 import com.teamcenter.rac.util.MessageBox;
 import com.teamcenter.rac.workflow.commands.newprocess.NewProcessCommand;
 import com.teamcenter.rac.workflow.commands.newprocess.NewProcessDialog;
+import com.uds.Jr.utils.TCBomUtil;
+import com.uds.Jr.utils.TCQueryUtil;
 import com.uds.sjec.bean.ParamViewTableBean;
 import com.uds.sjec.common.ConstDefine;
 import com.uds.sjec.service.IImportProjectService;
 import com.uds.sjec.service.impl.ImportProjectImpl;
-import com.uds.sjec.utils.BomUtil;
 import com.uds.sjec.utils.DatesetUtil;
 import com.uds.sjec.utils.ItemUtil;
 
@@ -71,8 +71,6 @@ public class ImportProjectControler {
 		private JButton button_paramPreview;
 		private JButton button_createItem;
 		private JButton button_dispatch;
-		private AbstractAIFUIApplication app = AIFDesktop.getActiveDesktop().getCurrentApplication();
-		private TCSession session = (TCSession) app.getSession();
 		private String excelPath;
 		private List<ParamViewTableBean> paramInfoFromExcelList; // 存储从excel中获取的参数信息
 		private List<ParamViewTableBean> paramInfoFromDatabaseList; // 存储从t_elevator_param从获取的参数信息
@@ -191,7 +189,7 @@ public class ImportProjectControler {
 					paramInfoFromDatabaseList = new ArrayList<ParamViewTableBean>();
 					// 将数据集下载到本地
 					String tempDir = System.getProperty("java.io.tmpdir");
-					boolean ret = DatesetUtil.datasetFileToLocalDir(session, dataset, "excel", "参数录入表.xlsx", tempDir);
+					boolean ret = DatesetUtil.datasetFileToLocalDir(ConstDefine.TC_SESSION, dataset, "excel", "参数录入表.xlsx", tempDir);
 					if (ret) {
 						// 读取excel表中数据，确定参数代号无重复项，判断电梯类型在数据库中是否存在
 						excelPath = tempDir + "\\" + "参数录入表.xlsx";
@@ -229,66 +227,104 @@ public class ImportProjectControler {
 									equipmentNo = tempString[0];
 								}
 							}
-							// TODO Jr 需要研究下这个设备号
 							if (equipmentNo == null || equipmentNo.equals("")) {
 								MessageBox.post("没有找到参数 设备号", "提示", MessageBox.INFORMATION);
 								return;
 							}
 							
-							// TODO Jr 在内网环境需要改成从用户数据库取数据
 							// 从SQLServer中获取配置单号
-							 String configListID = importProjectService.getConfigListID(equipmentNo);
-							 if (configListID == null || configListID.equals("")) {
-								 MessageBox.post("没有获取到配置单号，将以流水码创建配置单", "提示", MessageBox.INFORMATION);
-								 configListID = "";
-//								 return;
-							 }
-							// 创建配置单
-							configurationListItem = importProjectService.createItem(session, "S2_CFG", configListID, "配置单", "");
-//							configurationListItem = ItemUtil.createtItem("S2_CFG", "配置单", "");
-							if (configurationListItem != null) {
-								TCComponentBOMLine configListTopBomLine = BomUtil.setBOMViewForItemRev(configurationListItem
-										.getLatestItemRevision());
-								// 创建电器配置单
-								TCComponentItem electricalItem = ItemUtil.createtItem("S2_CFG", configurationListItem
-										.getLatestItemRevision().getProperty("item_id") + ConstDefine.TC_GROUP_ELECTRICAL, "电气配置单VI", "");
-								configListTopBomLine.add(electricalItem, "");
-								// 创建机械配置单
-								TCComponentItem mechanicalItem = ItemUtil.createtItem("S2_CFG", configurationListItem
-										.getLatestItemRevision().getProperty("item_id") + ConstDefine.TC_GROUP_MECHANICAL, "机械配置单VI", "");
-								configListTopBomLine.add(mechanicalItem, "");
-								TCComponentBOMWindow bomWindow = configListTopBomLine.getCachedWindow();
-								bomWindow.save();
-								
-								// 配置单挂在newStuff下
-								newstuffFolder = componentFolder.getNewStuffFolder(session);
-								newstuffFolder.add("contents", configurationListItem);
-								
-								// 将配置单信息显示在窗口
-								textField_ID.setText(configurationListItem.getLatestItemRevision().getProperty("item_id"));
-								textField_Rev.setText(configurationListItem.getLatestItemRevision().getProperty("item_revision_id"));
-								
-								// 将配置单信息和excel信息存储到数据库
-								boolean isStoraged = importProjectService.getInfoTodatabase(configurationListItem, paramInfoFromExcelList,
-										paramInfoFromDatabaseList, session);
-								if (isStoraged) {
-									// 将excel上传到TC
-									TCComponentItemRevision itemRevision = configurationListItem.getLatestItemRevision();
-									importProjectService.createDataSet(session, excelPath, "MSExcelX", "excel", configurationListItem
-											.getLatestItemRevision().getProperty("item_id") + "参数录入表", itemRevision, "IMAN_specification",
-											true);
-									MessageBox.post("配置单创建成功。", "导入项目", MessageBox.INFORMATION);
-								} else {
-									MessageBox.post("配置单参数导入到数据库失败。", "导入项目", MessageBox.ERROR);
+							String configListID = importProjectService.getConfigListID(equipmentNo);
+							if (configListID == null || configListID.equals("")) {
+								MessageBox.post("没有获取到配置单号，将以流水码创建配置单", "提示", MessageBox.INFORMATION);
+								configListID = "";
+							}
+							
+							// 组织配置单
+							TCComponentQuery itemQuery = TCQueryUtil.GetTCComponentQuery(ConstDefine.TC_SESSION, "零组件 ID");
+							TCComponent[] items0 = TCQueryUtil.GetItemByID(itemQuery, configListID);
+							if (items0 == null || items0.length == 0) {
+								configurationListItem = importProjectService.createItem(ConstDefine.TC_SESSION, "S2_CFG", configListID, "配置单", "");
+								if (configurationListItem == null) {
+									MessageBox.post("创建配置单" + configListID + "失败，详情请联系管理员检查控制台", "提示", MessageBox.INFORMATION);
+									return;
 								}
 							} else {
-								MessageBox.post("该配置单可能已经存在，创建失败。", "导入项目", MessageBox.ERROR);
+//								configurationListItem = (TCComponentItem)items0[0];
+								MessageBox.post("创建配置单" + configListID + "已经存在", "提示", MessageBox.INFORMATION);
+								return;
 							}
-							// } else if (configListID.equals("")) {
-							// MessageBox.post("没有找到对应的配置单号。", "导入项目",
-							// MessageBox.ERROR);
-							// }
-						} catch (TCException e2) {
+							// 电器配置单
+							TCComponentItem electricalItem = null;
+							String electricalItemID = configurationListItem.getProperty("item_id") + ConstDefine.TC_GROUP_ELECTRICAL;
+							items0 = TCQueryUtil.GetItemByID(itemQuery, electricalItemID);
+							if (items0 == null || items0.length == 0) {
+								electricalItem = ItemUtil.createtItem("S2_CFG", electricalItemID, "电气配置单VI", "");
+								if (electricalItem == null) {
+									MessageBox.post("创建配置单" + electricalItemID + "失败，详情请联系管理员检查控制台", "提示", MessageBox.INFORMATION);
+									return;
+								}
+							} else {
+								electricalItem = (TCComponentItem)items0[0];
+							}
+							// 机械配置单
+							TCComponentItem mechanicalItem = null;
+							String mechanicalItemID = configurationListItem.getProperty("item_id") + ConstDefine.TC_GROUP_MECHANICAL;
+							items0 = TCQueryUtil.GetItemByID(itemQuery, mechanicalItemID);
+							if (items0 == null || items0.length == 0) {
+								mechanicalItem = ItemUtil.createtItem("S2_CFG", mechanicalItemID, "机械配置单VI", "");
+								if (mechanicalItem == null) {
+									MessageBox.post("创建配置单" + mechanicalItemID + "失败，详情请联系管理员检查控制台", "提示", MessageBox.INFORMATION);
+									return;
+								}
+							} else {
+								mechanicalItem = (TCComponentItem)items0[0];
+							}
+							
+							// 搭建配置单BOM
+							TCComponentBOMLine configListTopBomLine = TCBomUtil.GetTopBomLine(ConstDefine.TC_SESSION, configurationListItem.getLatestItemRevision(), "视图");
+							if (configListTopBomLine == null) {
+								// 没有视图就去创建
+								configListTopBomLine = TCBomUtil.SetBOMViewForItemRev(ConstDefine.TC_SESSION, configurationListItem.getLatestItemRevision());
+							}else{
+								if(configListTopBomLine.hasChildren()){
+									AIFComponentContext[] children = configListTopBomLine.getChildren();
+									for (AIFComponentContext context : children) {
+										TCComponentBOMLine bomLine = (TCComponentBOMLine) context.getComponent();
+										bomLine.cut();
+									}
+									// 必须先关闭视图后再重新搭建，否则BomLine会按照之前的排序(查找编号属性)
+									TCBomUtil.CloseWindow(configListTopBomLine);
+									configListTopBomLine = TCBomUtil.GetTopBomLine(ConstDefine.TC_SESSION, configurationListItem.getLatestItemRevision(), "视图");
+								}
+							}
+							configListTopBomLine.add(electricalItem, "");
+							configListTopBomLine.add(mechanicalItem, "");
+							TCBomUtil.CloseWindow(configListTopBomLine);
+
+							// 配置单挂在newStuff下
+							try {
+								newstuffFolder = componentFolder.getNewStuffFolder(ConstDefine.TC_SESSION);
+								newstuffFolder.add("contents", configurationListItem);
+							} catch (Exception e1) {
+								e1.printStackTrace();
+							}
+
+							// 将配置单信息显示在窗口
+							textField_ID.setText(configurationListItem.getLatestItemRevision().getProperty("item_id"));
+							textField_Rev.setText(configurationListItem.getLatestItemRevision().getProperty("item_revision_id"));
+
+							// 将配置单信息和excel信息存储到数据库
+							boolean isStoraged = importProjectService.getInfoTodatabase(configurationListItem, paramInfoFromExcelList, paramInfoFromDatabaseList, ConstDefine.TC_SESSION);
+							if (isStoraged) {
+								// 将excel上传到TC
+								TCComponentItemRevision itemRevision = configurationListItem.getLatestItemRevision();
+								importProjectService.createDataSet(ConstDefine.TC_SESSION, excelPath, "MSExcelX", "excel", 
+										configurationListItem.getProperty("item_id") + "参数录入表", itemRevision, "IMAN_specification", true);
+								MessageBox.post("配置单创建成功。", "导入项目", MessageBox.INFORMATION);
+							} else {
+								MessageBox.post("配置单参数导入到数据库失败。", "导入项目", MessageBox.INFORMATION);
+							}
+						} catch (Exception e2) {
 							e2.printStackTrace();
 							MessageBox.post(e2.getMessage(), "导入项目", MessageBox.ERROR);
 						}

@@ -24,15 +24,23 @@ import com.uds.sjec.common.Const.PreferenceService;
 import com.uds.sjec.common.ConstDefine;
 import com.uds.sjec.controler.CfgManagementControler;
 import com.uds.sjec.controler.ImportProjectControler;
-import com.uds.sjec.frame.CfgManagementFrame;
 
 public class MainView extends ViewPart {
 
 	private AIFDesktop desk = null;
-	private CfgManagementFrame cfgManagementFrame;// 配置单管理
 
 	@Override
 	public void createPartControl(Composite arg0) {
+		CommonFunction.InitSomeConst();
+		if (!CommonFunction.m_errorMessage.equals("")) {
+			MessageBox.post(CommonFunction.m_errorMessage, "提示", MessageBox.INFORMATION);
+			return;
+		}
+		CommonFunction.GetDBMessage();
+		if (!CommonFunction.m_errorMessage.equals("")) {
+			MessageBox.post(CommonFunction.m_errorMessage, "提示", MessageBox.INFORMATION);
+			return;
+		}
 
 		org.eclipse.swt.graphics.Color _color = new org.eclipse.swt.graphics.Color(null, new RGB(255, 255, 255));
 		arg0.setBackground(_color);
@@ -67,10 +75,7 @@ public class MainView extends ViewPart {
 			@SuppressWarnings({ "deprecation" })
 			@Override
 			public void mouseDoubleClick(MouseEvent arg0) {
-				CommonFunction.Init();
-				if (!ConstDefine.IFCANDO || !ConstDefine.IFDEFINE) {
-					return;
-				}
+				CommonFunction.GetTCSession();
 				
 				TreeItem treeitem = tree.getItem(new Point(arg0.x, arg0.y));
 				String Item = treeitem.getText();
@@ -90,14 +95,12 @@ public class MainView extends ViewPart {
 						MessageBox.post("请选择参数录入表。", "项目导入", MessageBox.ERROR);
 					}
 				} else if (Item.equals("配置单管理")) {
-					if (cfgManagementFrame == null) {
-						cfgManagementFrame = new CfgManagementFrame();
-					}
 					CfgManagementControler cfgManagementControler = new CfgManagementControler();
-					cfgManagementControler.userTask(cfgManagementFrame);
+					cfgManagementControler.userTask();
 				} else if (Item.equals("参数管理")) {
 					String currentUserName = ConstDefine.TC_SESSION.getUserName();
-					String[] paramConfigUser = ConstDefine.TC_PREFERENCESERVICE.getStringArray(TCPreferenceService.TC_preference_site,
+					TCPreferenceService preferenceService = ConstDefine.TC_SESSION.getPreferenceService();
+					String[] paramConfigUser = preferenceService.getStringArray(TCPreferenceService.TC_preference_site,
 							PreferenceService.PARAM_CONFIG_USER);
 					if (paramConfigUser.length == 0) {
 						MessageBox.post("没有找到首选项配置：" + PreferenceService.PARAM_CONFIG_USER, "参数管理", MessageBox.ERROR);
@@ -112,7 +115,7 @@ public class MainView extends ViewPart {
 					}
 					if (hasPermissions) {
 						// 启动exe路径
-						String exePath = ConstDefine.TC_PREFERENCESERVICE.getString(TCPreferenceService.TC_preference_site,
+						String exePath = preferenceService.getString(TCPreferenceService.TC_preference_site,
 								PreferenceService.PARAM_CONFIG_PATH);
 						if (exePath.equals("")) {
 							MessageBox.post("没有找到首选项配置：" + PreferenceService.PARAM_CONFIG_PATH, "参数管理", MessageBox.ERROR);

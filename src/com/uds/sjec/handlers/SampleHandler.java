@@ -3,10 +3,12 @@ package com.uds.sjec.handlers;
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
+import org.eclipse.swt.graphics.Rectangle;
+import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Shell;
 
-import com.teamcenter.rac.aif.AbstractAIFUIApplication;
-import com.teamcenter.rac.aifrcp.AIFUtility;
-import com.teamcenter.rac.kernel.TCSession;
+import com.uds.sjec.common.CommonFunction;
+import com.uds.sjec.common.ConstDefine;
 import com.uds.sjec.controler.CommandOperationManager;
 
 /**
@@ -29,14 +31,18 @@ public class SampleHandler extends AbstractHandler {
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		// 用于导出的Jar包是否包含新的修改
 		System.out.println("----------------------------------");
-		System.out.println("Jar Time :  2018.08.19 10:17");
+		System.out.println("Jar Time :  2018.09.25 10:18");
 		
-		AbstractAIFUIApplication app = AIFUtility.getCurrentApplication();
-		TCSession session = (TCSession) app.getSession();
+		Shell TCShell = Display.getCurrent().getShells()[0];
+		Rectangle rectangle0 = TCShell.getBounds();
+		java.awt.Rectangle rectangle = new java.awt.Rectangle(rectangle0.x, rectangle0.y, rectangle0.width, rectangle0.height);
+		
+		CommonFunction.GetTCSession();
 		CommandOperationManager opr = new CommandOperationManager();
 		String command = event.getCommand().getId();
 		opr.m_commandId = command;
-		session.queueOperation(opr);
+		opr.m_rectangle = rectangle;
+		ConstDefine.TC_SESSION.queueOperation(opr);
 
 		return null;
 	}

@@ -8,17 +8,17 @@
       <command name="输出BOM明细表到Pdf" categoryId="com.uds.sjec.commands.category" id="com.uds.sjec.commands.productionTablePdf"/>
       <command name="输出BOM明细表到Excel" categoryId="com.uds.sjec.commands.category" id="com.uds.sjec.commands.productionTableOfLevelOne"/>
       <command name="输出BOM明细表到Pdf" categoryId="com.uds.sjec.commands.category" id="com.uds.sjec.commands.productionTablePdfOfLevelOne"/>
-      <command name="批量导出" categoryId="com.uds.sjec.commands.category" id="com.uds.sjec.commands.batchExportExcel"/>
+      <command name="生成明细表" categoryId="com.uds.sjec.commands.category" id="com.uds.sjec.commands.batchExportExcel"/>
       <command name="编辑变量条件" categoryId="com.uds.sjec.commands.category" id="com.uds.sjec.commands.EditVariableCondition"/>
    </extension>
    
    <extension point="org.eclipse.ui.handlers">
-      <handler commandId="com.uds.sjec.commands.productionTable" class="com.uds.sjec.handlers.NewSampleHandler"/> 
-      <handler commandId="com.uds.sjec.commands.productionTablePdf" class="com.uds.sjec.handlers.NewSampleHandler"/> 
-      <handler commandId="com.uds.sjec.commands.productionTableOfLevelOne" class="com.uds.sjec.handlers.NewSampleHandler"/> 
-      <handler commandId="com.uds.sjec.commands.productionTablePdfOfLevelOne" class="com.uds.sjec.handlers.NewSampleHandler"/> 
-      <handler commandId="com.uds.sjec.commands.batchExportExcel" class="com.uds.sjec.handlers.NewSampleHandler"/> 
-      <handler commandId="com.uds.sjec.commands.EditVariableCondition" class="com.uds.sjec.handlers.NewSampleHandler"/> 
+      <handler commandId="com.uds.sjec.commands.productionTable" class="com.uds.sjec.handlers.SampleHandler"/> 
+      <handler commandId="com.uds.sjec.commands.productionTablePdf" class="com.uds.sjec.handlers.SampleHandler"/> 
+      <handler commandId="com.uds.sjec.commands.productionTableOfLevelOne" class="com.uds.sjec.handlers.SampleHandler"/> 
+      <handler commandId="com.uds.sjec.commands.productionTablePdfOfLevelOne" class="com.uds.sjec.handlers.SampleHandler"/> 
+      <handler commandId="com.uds.sjec.commands.batchExportExcel" class="com.uds.sjec.handlers.SampleHandler"/> 
+      <handler commandId="com.uds.sjec.commands.EditVariableCondition" class="com.uds.sjec.handlers.SampleHandler"/> 
    </extension>
    
    <extension point="org.eclipse.ui.bindings">
