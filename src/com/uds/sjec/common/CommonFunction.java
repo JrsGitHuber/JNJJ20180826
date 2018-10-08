@@ -171,4 +171,32 @@ public class CommonFunction {
     	
     	return data;
 	}
+	
+	@SuppressWarnings("deprecation")
+	public static String JudgeUserPermission(String userName) {
+		m_errorMessage = "";
+		GetTCSession();
+		TCPreferenceService preferenceService = ConstDefine.TC_SESSION.getPreferenceService();
+		String[] values = preferenceService.getStringArray(TCPreferenceService.TC_preference_site,
+				PreferenceService.PARAM_CONFIG_USER);
+		if (values == null || values.length == 0) {
+			m_errorMessage = "没有找到首选项配置：" + PreferenceService.PARAM_CONFIG_USER;
+			return "";
+		}
+		String[] permissions = new String[] { "write", "read" };
+		for (String value : values) {
+			for (String permission : permissions) {
+				if (value.startsWith(permission)) {
+					String[] users = value.replace(permission+":", "").split(",");
+					for (String user : users) {
+						if (userName.equals(user)) {
+							return permission;
+						}
+					}
+				}
+			}
+		}
+		
+		return "noPermission";
+	}
 }

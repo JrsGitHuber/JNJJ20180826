@@ -99,50 +99,51 @@ public class MainView extends ViewPart {
 					cfgManagementControler.userTask();
 				} else if (Item.equals("参数管理")) {
 					String currentUserName = ConstDefine.TC_SESSION.getUserName();
-					TCPreferenceService preferenceService = ConstDefine.TC_SESSION.getPreferenceService();
-					String[] paramConfigUser = preferenceService.getStringArray(TCPreferenceService.TC_preference_site,
-							PreferenceService.PARAM_CONFIG_USER);
-					if (paramConfigUser.length == 0) {
-						MessageBox.post("没有找到首选项配置：" + PreferenceService.PARAM_CONFIG_USER, "参数管理", MessageBox.ERROR);
+					String judgeResult = CommonFunction.JudgeUserPermission(currentUserName);
+					if (!CommonFunction.m_errorMessage.equals("")) {
+						MessageBox.post(CommonFunction.m_errorMessage, "提示", MessageBox.INFORMATION);
 						return;
 					}
-					Boolean hasPermissions = false;
-					for (String user : paramConfigUser) {
-						if (user.equals(currentUserName)) {
-							hasPermissions = true;
-							break;
-						}
+					if (judgeResult.equals("noPermission")) {
+						MessageBox.post("暂无权限进行操作", "提示", MessageBox.INFORMATION);
+						return;
 					}
-					if (hasPermissions) {
-						// 启动exe路径
-						String exePath = preferenceService.getString(TCPreferenceService.TC_preference_site,
-								PreferenceService.PARAM_CONFIG_PATH);
-						if (exePath.equals("")) {
-							MessageBox.post("没有找到首选项配置：" + PreferenceService.PARAM_CONFIG_PATH, "参数管理", MessageBox.ERROR);
-							return;
-						}
-						java.util.Date date = new java.util.Date();
-						SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd");// 设置日期格式
-						String systemDate = df.format(date);// 当前时间
-						try {
-							systemDate = EncryptionUtil.MD5(systemDate);
-						} catch (Exception e1) {
-							e1.printStackTrace();
-							MessageBox.post("日期转码出错", "提示", MessageBox.INFORMATION);
-							return;
-						}
-						String connection = "Data Source=(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=" + ConstDefine.TCDB_IP + ")(PORT=" + ConstDefine.TCDB_PORT + "))(CONNECT_DATA=(SID=" + ConstDefine.TCDB_UID + ")));User Id=" + ConstDefine.TCDB_USER + ";Password=" + ConstDefine.TCDB_PASSWORD + ";";
-						Runtime runtime = Runtime.getRuntime();
-						try {
-							String[] param = { exePath, systemDate, currentUserName, connection };
-							runtime.exec(param);
-						} catch (IOException e) {
-							e.printStackTrace();
-							MessageBox.post(e.getMessage(), "参数管理", MessageBox.ERROR);
-						}
+					String ifWrite = judgeResult.equals("write") ? "true" : "false";
+					if (judgeResult.equals("read") || judgeResult.equals("write")) {
+						
 					} else {
-						MessageBox.post("该功能不可用，无操作权限。", "参数管理", MessageBox.WARNING);
+						MessageBox.post("暂无权限进行操作", "提示", MessageBox.INFORMATION);
+						return;
 					}
+					
+					// 启动exe路径
+					TCPreferenceService preferenceService = ConstDefine.TC_SESSION.getPreferenceService();
+					String exePath = preferenceService.getString(TCPreferenceService.TC_preference_site,
+							PreferenceService.PARAM_CONFIG_PATH);
+					if (exePath.equals("")) {
+						MessageBox.post("没有找到首选项配置：" + PreferenceService.PARAM_CONFIG_PATH, "提示", MessageBox.INFORMATION);
+						return;
+					}
+					java.util.Date date = new java.util.Date();
+					SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd");// 设置日期格式
+					String systemDate = df.format(date);// 当前时间
+					try {
+						systemDate = EncryptionUtil.MD5(systemDate);
+					} catch (Exception e1) {
+						e1.printStackTrace();
+						MessageBox.post("日期转码出错:" + e1.getMessage(), "提示", MessageBox.INFORMATION);
+						return;
+					}
+					String connection = "Data Source=(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=" + ConstDefine.TCDB_IP + ")(PORT=" + ConstDefine.TCDB_PORT + "))(CONNECT_DATA=(SID=" + ConstDefine.TCDB_UID + ")));User Id=" + ConstDefine.TCDB_USER + ";Password=" + ConstDefine.TCDB_PASSWORD + ";";
+					Runtime runtime = Runtime.getRuntime();
+					try {
+						String[] param = { exePath, systemDate, currentUserName, connection, ifWrite };
+						runtime.exec(param);
+					} catch (IOException e) {
+						e.printStackTrace();
+						MessageBox.post("参数管理出错：" + e.getMessage(), "提示", MessageBox.INFORMATION);
+					}
+				
 				}
 			}
 
