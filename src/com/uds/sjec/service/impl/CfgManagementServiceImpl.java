@@ -70,6 +70,7 @@ public class CfgManagementServiceImpl implements ICfgManagementService {
 	@Override
 	public void searchCfgList(DefaultTableModel configarationModel, String searchId, String searchIdType, String taskStatu,
 			String startedTime, String finishedTime, String workFlowName) {
+		
 		// 获取配置单信息
 		cfgListInfoTableList = new ArrayList<CfgListInfoTableBean>();
 		searchId = searchId.replace("*", "%");
@@ -117,7 +118,11 @@ public class CfgManagementServiceImpl implements ICfgManagementService {
 							e.printStackTrace();
 						}
 						if (unStarted) {
-							bean.createTime = resultSet.getString("creation_date");
+//							bean.createTime = resultSet.getString("creation_date");
+							bean.createTime = CommonFunction.GetCommonDateStr(resultSet.getString("creation_date"));
+							if (!CommonFunction.m_errorMessage.equals("")) {
+								MessageBox.post(CommonFunction.m_errorMessage, "提示", MessageBox.INFORMATION);
+							}
 							if (bean.createTime.compareTo(startedTime) >= 0 && bean.createTime.compareTo(finishedTime) <= 0) {
 								bean.status = "未开始";
 								cfgListInfoTableList.add(bean);
@@ -158,8 +163,18 @@ public class CfgManagementServiceImpl implements ICfgManagementService {
 											TCComponentTask tempTask = (TCComponentTask) tempContext.getComponent();
 											if (tempTask.getTaskType().equals("EPMDoTask")
 													&& tempTask.getProperty("current_name").equals("编制")) {// 编制
-												bean.sponsorTime = tempTask.getProperty("creation_date"); // 流程发起时间
-												bean.releaseTime = tempTask.getProperty("fnd0EndDate"); // 流程发布时间
+//												bean.sponsorTime = tempTask.getProperty("creation_date"); // 流程发起时间
+//												bean.releaseTime = tempTask.getProperty("fnd0EndDate"); // 流程发布时间
+												bean.sponsorTime = CommonFunction.GetCommonDateStr(tempTask.getProperty("creation_date"));
+												if (!CommonFunction.m_errorMessage.equals("")) {
+													MessageBox.post(CommonFunction.m_errorMessage, "提示", MessageBox.INFORMATION);
+													return;
+												}
+												bean.releaseTime = CommonFunction.GetCommonDateStr(tempTask.getProperty("fnd0EndDate"));
+												if (!CommonFunction.m_errorMessage.equals("")) {
+													MessageBox.post(CommonFunction.m_errorMessage, "提示", MessageBox.INFORMATION);
+													return;
+												}
 												if ((bean.sponsorTime.compareTo(startedTime) >= 0)
 														&& (bean.sponsorTime.compareTo(finishedTime) <= 0) && bean.releaseTime.equals("")) {
 													bean.status = "流程中";
@@ -210,8 +225,18 @@ public class CfgManagementServiceImpl implements ICfgManagementService {
 												TCComponentTask tempTask = (TCComponentTask) tempContext.getComponent();
 												if (tempTask.getTaskType().equals("EPMDoTask")
 														&& tempTask.getProperty("current_name").equals("编制")) {// 编制
-													bean.sponsorTime = tempTask.getProperty("creation_date"); // 流程发起时间
-													bean.releaseTime = tempTask.getProperty("fnd0EndDate"); // 流程发布时间
+//													bean.sponsorTime = tempTask.getProperty("creation_date"); // 流程发起时间
+//													bean.releaseTime = tempTask.getProperty("fnd0EndDate"); // 流程发布时间
+													bean.sponsorTime = CommonFunction.GetCommonDateStr(tempTask.getProperty("creation_date"));
+													if (!CommonFunction.m_errorMessage.equals("")) {
+														MessageBox.post(CommonFunction.m_errorMessage, "提示", MessageBox.INFORMATION);
+														return;
+													}
+													bean.releaseTime = CommonFunction.GetCommonDateStr(tempTask.getProperty("fnd0EndDate"));
+													if (!CommonFunction.m_errorMessage.equals("")) {
+														MessageBox.post(CommonFunction.m_errorMessage, "提示", MessageBox.INFORMATION);
+														return;
+													}
 													if ((bean.releaseTime.compareTo(startedTime) >= 0)
 															&& (bean.releaseTime.compareTo(finishedTime) <= 0)
 															&& !bean.releaseTime.equals("")) {

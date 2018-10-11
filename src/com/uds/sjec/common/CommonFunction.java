@@ -2,6 +2,9 @@ package com.uds.sjec.common;
 
 import java.io.File;
 import java.io.InputStream;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -13,6 +16,7 @@ import com.teamcenter.rac.aif.kernel.InterfaceAIFComponent;
 import com.teamcenter.rac.kernel.TCPreferenceService;
 import com.teamcenter.rac.kernel.TCSession;
 import com.uds.sjec.common.Const.PreferenceService;
+
 import common.Jr.utils.AsposeExcelUtils;
 
 public class CommonFunction {
@@ -198,5 +202,45 @@ public class CommonFunction {
 		}
 		
 		return "noPermission";
+	}
+	
+	public static String GetCommonDateStr(String dateStr) {
+		m_errorMessage = "";
+		
+		if (dateStr.equals("")) {
+			return "";
+		} else {
+			SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-M-d");
+			SimpleDateFormat dateFormat1 = new SimpleDateFormat("yyyy-MM-dd");
+			
+			try {
+				String newDateStr = dateFormat1.format(dateFormat.parse(dateStr));
+				return newDateStr;
+			} catch (ParseException e) {
+				e.printStackTrace();
+				m_errorMessage = "转化日期出错" + e.getMessage();
+				return "";
+			}
+		}
+	}
+	
+	public static String GetLocalMac() throws Exception {
+		InetAddress ia = InetAddress.getLocalHost();
+		byte[] mac = NetworkInterface.getByInetAddress(ia).getHardwareAddress();
+		StringBuffer sb = new StringBuffer("");
+		for (int i = 0; i < mac.length; i++) {
+			if (i != 0) {
+				sb.append("-");
+			}
+			// 字节转换为整数
+			int temp = mac[i] & 0xff;
+			String str = Integer.toHexString(temp);
+			if (str.length() == 1) {
+				sb.append("0" + str.toUpperCase());
+			} else {
+				sb.append(str.toUpperCase());
+			}
+		}
+		return sb.toString();
 	}
 }

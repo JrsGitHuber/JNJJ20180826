@@ -361,7 +361,7 @@ public class CfgManagementControler {
 					if (!searchId.equals("")) {
 						searchId = "*" + searchId + "*";
 						String taskStatu = comboBox_taskStatus.getSelectedItem().toString();
-						SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-M-d HH:mm");
+						SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
 						Date startedDate = propertyDateButton_startedTime.getDate();
 						if (startedDate != null) {
 							startedTime = simpleDateFormat.format(startedDate);
