@@ -556,13 +556,13 @@ public class CfgManagementControler {
 									BomToPreviewBean.AllBeanCount = 0;
 									
 									System.out.println("--------------------Information--------------------");
-									System.out.println();
 									long startTime = System.currentTimeMillis();
 									GetBomToPreviewBean(superTopBOMLine, bean);
 									long endTime = System.currentTimeMillis();
 									System.out.println("此Bom共有BomLine " + BomToPreviewBean.AllBeanCount + "行");
 									System.out.println(Float.toString((endTime - startTime) / 1000F) + " seconds.");
 									System.out.println("--------------------End--------------------");
+									System.out.println();
 									
 									m_frame.setAlwaysOnTop(false);
 //									TipsUI.CloseUI();
