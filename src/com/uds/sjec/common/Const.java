@@ -24,6 +24,7 @@ public interface Const {
 		String CONFIG_WORkFLOW = "SJEC_CFG_WF";// 配置单流程名称
 		String UDSSERV_IP_PORT = "UDS_ENV_UDSSERVER_IP_PORT";// 签名服务器地址和端口
 		String PARAM_CONFIG_USER = "SJEC_PARAMCONFIG_USER";// 参数管理用户
+		String USER_GROUP_JUDGE = "SJEC_USER_GROUP_JUDGE";// 用户所在组判断
 		String UDS_SJEC_DBMESSAGE = "UDS_SJEC_DBMESSAGE";// 数据库信息
 		String UDS_SJEC_EXPORT_EXCEL = "UDS_SJEC_EXPORT_EXCEL";// 导出整体BOM表信息
 		String PARAM_CONFIG_PATH = "UDS_PARAMCONFIG_PATH";// 参数管理exe的路径

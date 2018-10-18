@@ -53,19 +53,33 @@ public class MainView extends ViewPart {
 		desk = AIFDesktop.getActiveDesktop();
 		desk.getCurrentApplication();
 		try {
-			TreeItem importProjectItem = new TreeItem(tree, SWT.NONE);
-			//org.eclipse.swt.graphics.Image image1 = Toolkit.getDefaultToolkit().getImage(MainView.class.getResource("/teamcenter_app_256.png"));
 			ClassLoader classLoader = MainView.class.getClassLoader();
+			
+			// 20181009 参数录入 任务分派
+			TreeItem item = new TreeItem(tree, SWT.NONE);
 			org.eclipse.swt.graphics.Image image = new org.eclipse.swt.graphics.Image(null, classLoader.getResourceAsStream("/导入项目.png"));
-			importProjectItem.setImage(image);
-			importProjectItem.setText("导入项目");
+			item.setImage(image);
+			item.setText("参数录入（AB录入）");
+			
+			TreeItem item1 = new TreeItem(tree, SWT.NONE);
+			org.eclipse.swt.graphics.Image image1 = new org.eclipse.swt.graphics.Image(null, classLoader.getResourceAsStream("/任务分派.png"));
+			item1.setImage(image1);
+			item1.setText("任务分派");
+			
+//			TreeItem importProjectItem = new TreeItem(tree, SWT.NONE);
+//			//org.eclipse.swt.graphics.Image image1 = Toolkit.getDefaultToolkit().getImage(MainView.class.getResource("/teamcenter_app_256.png"));
+////			org.eclipse.swt.graphics.Image image = new org.eclipse.swt.graphics.Image(null, classLoader.getResourceAsStream("/导入项目.png"));
+//			importProjectItem.setImage(image);
+//			importProjectItem.setText("导入项目");
+			
 			TreeItem configurationManagementItem = new TreeItem(tree, SWT.NONE);
-			org.eclipse.swt.graphics.Image image1 = new org.eclipse.swt.graphics.Image(null, classLoader.getResourceAsStream("/配置单管理.png"));
-			configurationManagementItem.setImage(image1);
+			org.eclipse.swt.graphics.Image image2 = new org.eclipse.swt.graphics.Image(null, classLoader.getResourceAsStream("/配置单管理.png"));
+			configurationManagementItem.setImage(image2);
 			configurationManagementItem.setText("配置单管理");
+			
 			TreeItem paramManagementItem = new TreeItem(tree, SWT.NONE);
-			org.eclipse.swt.graphics.Image image2 = new org.eclipse.swt.graphics.Image(null, classLoader.getResourceAsStream("/参数管理.png"));
-			paramManagementItem.setImage(image2);
+			org.eclipse.swt.graphics.Image image3 = new org.eclipse.swt.graphics.Image(null, classLoader.getResourceAsStream("/参数管理.png"));
+			paramManagementItem.setImage(image3);
 			paramManagementItem.setText("参数管理");
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -78,8 +92,13 @@ public class MainView extends ViewPart {
 				CommonFunction.GetTCSession();
 				
 				TreeItem treeitem = tree.getItem(new Point(arg0.x, arg0.y));
-				String Item = treeitem.getText();
-				if (Item.equals("导入项目")) {
+				String itemText = treeitem.getText();
+				
+				if (itemText.equals("参数录入（AB录入）")) {
+					new SelectExcel().ShowUI(CommonFunction.GetRectangle());
+				} else if (itemText.equals("任务分派")) {
+					new AssignTask().ShowUI(CommonFunction.GetRectangle());
+				} else if (itemText.equals("导入项目")) {
 					AbstractAIFUIApplication application = AIFDesktop.getActiveDesktop().getCurrentApplication();
 					InterfaceAIFComponent selComp = application.getTargetComponent();
 					Boolean isSelected = false;
@@ -94,10 +113,10 @@ public class MainView extends ViewPart {
 					if (!isSelected) {
 						MessageBox.post("请选择参数录入表。", "项目导入", MessageBox.ERROR);
 					}
-				} else if (Item.equals("配置单管理")) {
+				} else if (itemText.equals("配置单管理")) {
 					CfgManagementControler cfgManagementControler = new CfgManagementControler();
 					cfgManagementControler.userTask();
-				} else if (Item.equals("参数管理")) {
+				} else if (itemText.equals("参数管理")) {
 					String currentUserName = ConstDefine.TC_SESSION.getUserName();
 					String judgeResult = CommonFunction.JudgeUserPermission(currentUserName);
 					if (!CommonFunction.m_errorMessage.equals("")) {

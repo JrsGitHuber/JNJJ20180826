@@ -75,6 +75,7 @@ public class CfgManagementControler {
 	}
 	
 	public void userTask() {
+		
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
 				try {
@@ -361,7 +362,7 @@ public class CfgManagementControler {
 					if (!searchId.equals("")) {
 						searchId = "*" + searchId + "*";
 						String taskStatu = comboBox_taskStatus.getSelectedItem().toString();
-						SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-M-d HH:mm");
+						SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
 						Date startedDate = propertyDateButton_startedTime.getDate();
 						if (startedDate != null) {
 							startedTime = simpleDateFormat.format(startedDate);
@@ -373,8 +374,13 @@ public class CfgManagementControler {
 							Date date = new Date();
 							finishedTime = simpleDateFormat.format(date);// 当前时间
 						}
-						cfgManagementService.searchCfgList(configListModel, searchId, searchIdType, taskStatu, startedTime, finishedTime,
-								workFlowName);
+						try {
+							cfgManagementService.searchCfgList(configListModel, searchId, searchIdType, taskStatu, startedTime, finishedTime,
+									workFlowName);
+						} catch (Exception e1) {
+							e1.printStackTrace();
+							MessageBox.post("查询配置单出错：" + e1.getMessage(), "提示", MessageBox.INFORMATION);
+						}
 					} else {
 						MessageBox.post("未找到相关配置单信息。", "配置单管理", MessageBox.WARNING);
 					}
@@ -482,13 +488,20 @@ public class CfgManagementControler {
 			// 配置预览
 			button_BOMConfiguration.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent e) {
+					ConstDefine.STARTTIME = System.currentTimeMillis();
+							
 					String configListId = textField_configurationID.getText();
 					// 根据配置单号，找到电梯型号（参数）找到对应的超级BOM  （电梯型号即为超级BOM的ID）
 					productType = cfgManagementService.queryProductType(configListId);
 					// 通过查询器找到对应的BOMLine
 					if (productType != null) {
 						CommonFunction.GetGroupSuffix();
-						String superBomID = productType + ConstDefine.TC_GROUP_SUFFIX;
+						if (!CommonFunction.m_errorMessage.equals("")) {
+							JOptionPane.showMessageDialog(m_frame, CommonFunction.m_errorMessage, "提示", JOptionPane.INFORMATION_MESSAGE);
+							return;
+						}
+//						String superBomID = productType + ConstDefine.TC_GROUP_SUFFIX;
+						String superBomID = "TEST" + ConstDefine.TC_GROUP_SUFFIX;
 						if (ConstDefine.IFTEST) {
 							superBomID = productType;
 						}
@@ -496,8 +509,10 @@ public class CfgManagementControler {
 						TCComponent[] searchResult = QueryUtil.getSearchResult(query, new String[] { "零组件 ID" }, new String[] { superBomID });
 						if (searchResult == null || searchResult.length == 0) {
 							JOptionPane.showMessageDialog(m_frame, "没有找到超级BOM " + superBomID, "提示", JOptionPane.INFORMATION_MESSAGE);
+							return;
 						} else if (searchResult.length != 1) {
 							JOptionPane.showMessageDialog(m_frame, "通过ID " + superBomID + " 找到多个Item", "提示", JOptionPane.INFORMATION_MESSAGE);
+							return;
 						}
 						
 						TCComponentItemRevision itemRevision = null;
@@ -539,7 +554,14 @@ public class CfgManagementControler {
 									
 									BomToPreviewBean bean = new BomToPreviewBean(superTopBOMLine);
 									BomToPreviewBean.AllBeanCount = 0;
+									
+									System.out.println("--------------------Information--------------------");
+									long startTime = System.currentTimeMillis();
 									GetBomToPreviewBean(superTopBOMLine, bean);
+									long endTime = System.currentTimeMillis();
+									System.out.println("此Bom共有BomLine " + BomToPreviewBean.AllBeanCount + "行");
+									System.out.println(Float.toString((endTime - startTime) / 1000F) + " seconds.");
+									System.out.println("--------------------End--------------------");
 									
 									m_frame.setAlwaysOnTop(false);
 //									TipsUI.CloseUI();
@@ -547,6 +569,9 @@ public class CfgManagementControler {
 									// 打开预览
 //									new TreeTableExample(button_BOMConfiguration, button_configurationCaculate, superTopBOMLine, configListId, paramMap);
 									
+									System.out.println("----------------------------------------");
+									ConstDefine.ENDTIME = System.currentTimeMillis();
+									System.out.println(Float.toString((ConstDefine.ENDTIME - ConstDefine.STARTTIME) / 1000F) + " seconds.");
 								} catch (Exception e) {
 									JOptionPane.showMessageDialog(TipsUI.contentPanel, "组织配置预览数据出错：" + e.getMessage() + "\n详细信息请联系管理员查看控制台", "提示", JOptionPane.INFORMATION_MESSAGE);
 									e.printStackTrace();
@@ -621,10 +646,16 @@ public class CfgManagementControler {
 			AIFComponentContext[] children = topBomLine.getChildren();		
 			for (AIFComponentContext context : children) {
 				TCComponentBOMLine bomLine = (TCComponentBOMLine) context.getComponent();
+				BomToPreviewBean.AllBeanCount++;
 				
 				// 判断bomLine是否符合条件
-				if(!JudgeIfAdd(bomLine)) {
-					continue;
+				try {
+					if(!JudgeIfAdd(bomLine)) {
+						continue;
+					}
+				} catch (Exception e) {
+					throw new Exception("判断" + bomLine.getProperty("bl_item_item_id") + "变量条件出错（父节点）" + topBomLine.getProperty("bl_item_item_id"));
+//					e.printStackTrace();
 				}
 				
 				BomToPreviewBean bean = new BomToPreviewBean(bomLine);
@@ -632,7 +663,6 @@ public class CfgManagementControler {
 					GetBomToPreviewBean(bomLine, bean);
 				}
 				rootBean.children.add(bean);
-				BomToPreviewBean.AllBeanCount++;
 			}
 		}
 		

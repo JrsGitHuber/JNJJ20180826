@@ -301,8 +301,13 @@ public class CfgManagementFrame extends JFrame {
 						Date date = new Date();
 						finishedTime = simpleDateFormat.format(date);// 当前时间
 					}
-					cfgManagementService.searchCfgList(configListModel, searchId, searchIdType, taskStatu, startedTime, finishedTime,
-							workFlowName);
+					try {
+						cfgManagementService.searchCfgList(configListModel, searchId, searchIdType, taskStatu, startedTime, finishedTime,
+								workFlowName);
+					} catch (Exception e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
 				} else {
 					MessageBox.post("未找到相关配置单信息。", "配置单管理", MessageBox.WARNING);
 				}

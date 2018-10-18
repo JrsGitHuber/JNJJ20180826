@@ -254,7 +254,7 @@ public class ImportProjectImpl implements IImportProjectService {
 			}
 			// 在梯型参数分类表中找到该梯型ID对应所有的梯型参数分类ID
 			String queryEPCIDSql = "select epc_id from t_epc where elevator_model_id ='" + value + "'";
-			resultSet = statement.executeQuery(queryEPCIDSql);
+			statement.executeQuery(queryEPCIDSql);
 			mdData = resultSet.getMetaData();
 			while (resultSet.next()) {
 				columnName = mdData.getColumnLabel(1);

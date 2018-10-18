@@ -5,6 +5,8 @@ import com.teamcenter.rac.kernel.TCSession;
 public class ConstDefine {
 	// ≈–∂œ «∑Ò «‘⁄≤‚ ‘
 	public static boolean IFTEST = false;
+	public static long STARTTIME = 0;
+	public static long ENDTIME = 0;
 	
 	public static boolean IFDEFINE = false;
 	public static boolean IFCANDO = true;

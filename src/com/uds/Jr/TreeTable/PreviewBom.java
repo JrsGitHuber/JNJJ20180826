@@ -79,8 +79,7 @@ public class PreviewBom {
 				int n = JOptionPane.showConfirmDialog(m_frame.getContentPane(), "是否进行配置计算", "提示", JOptionPane.YES_NO_OPTION);
 				if (n == 0) {
 					CfgManagementControler.SetCfgManagementFrameButton();
-				}
-				else {
+				} else {
 					CfgManagementControler.SetButton2();
 				}
 				

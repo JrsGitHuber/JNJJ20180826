@@ -1,31 +1,37 @@
 package com.uds.sjec.controler;
 
-import com.teamcenter.rac.aif.AbstractAIFUIApplication;
-import com.teamcenter.rac.aif.kernel.InterfaceAIFComponent;
-import com.teamcenter.rac.aifrcp.AIFUtility;
-import com.teamcenter.rac.kernel.TCComponentBOMLine;
-import com.teamcenter.rac.kernel.TCException;
-import com.teamcenter.rac.util.MessageBox;
-import com.uds.Jr.utils.StringUtil;
-import com.uds.common.exceptions.CalculateException;
-import com.uds.common.utils.MathUtil;
-import com.uds.sjec.bean.VariabelConditionTableBean;
-import com.uds.sjec.common.ConstDefine;
-import com.uds.sjec.service.IEditVariableConditionService;
-import com.uds.sjec.service.impl.EditVariableConditionServiceImpl;
-
 import java.awt.Color;
 import java.awt.EventQueue;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.swing.BorderFactory;
+import javax.swing.JButton;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JLabel;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
 import javax.swing.JTextField;
-import javax.swing.JButton;
 import javax.swing.JTextPane;
 import javax.swing.JTree;
+import javax.swing.ListSelectionModel;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
@@ -48,29 +54,22 @@ import javax.swing.text.StyledEditorKit;
 import javax.swing.text.View;
 import javax.swing.text.ViewFactory;
 import javax.swing.tree.DefaultMutableTreeNode;
-import javax.swing.ListSelectionModel;
-import javax.swing.JScrollPane;
-import javax.swing.JTable;
-
-import java.awt.event.ActionListener;
-import java.awt.event.ActionEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import sun.swing.table.DefaultTableCellHeaderRenderer;
+
+import com.teamcenter.rac.aif.AbstractAIFUIApplication;
+import com.teamcenter.rac.aif.kernel.InterfaceAIFComponent;
+import com.teamcenter.rac.aifrcp.AIFUtility;
+import com.teamcenter.rac.kernel.TCComponentBOMLine;
+import com.teamcenter.rac.kernel.TCException;
+import com.teamcenter.rac.util.MessageBox;
+import com.uds.Jr.utils.RegularUtil;
+import com.uds.Jr.utils.StringUtil;
+import com.uds.common.exceptions.CalculateException;
+import com.uds.sjec.bean.VariabelConditionTableBean;
+import com.uds.sjec.common.ConstDefine;
+import com.uds.sjec.service.IEditVariableConditionService;
+import com.uds.sjec.service.impl.EditVariableConditionServiceImpl;
 
 public class EditVariableConditionControler {
 	public IEditVariableConditionService editVariableConditionService = new EditVariableConditionServiceImpl();
@@ -136,7 +135,8 @@ public class EditVariableConditionControler {
 		public EditVariableConditionFrame(final TCComponentBOMLine topBomLine, final TCComponentBOMLine bomLine) {
 			InitSimpleAttributeSet();
 			
-			setBounds(100, 100, 571, 726);
+//			setBounds(100, 100, 571, 726);
+			setBounds(100, 100, 700, 676);
 			setTitle("编辑变量条件");
 			setResizable(false);
 			setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
@@ -144,7 +144,7 @@ public class EditVariableConditionControler {
 			setLocationRelativeTo(null);
 
 			panel = new JPanel();
-			panel.setBounds(149, 10, 406, 677);
+			panel.setBounds(280, 10, 406, 627);
 			getContentPane().add(panel);
 			panel.setBorder(BorderFactory.createTitledBorder(""));
 			panel.setLayout(null);
@@ -204,7 +204,7 @@ public class EditVariableConditionControler {
 			panel.add(textField_BOMLine);
 
 			button_refresh = new JButton("刷新");
-			button_refresh.setBounds(334, 46, 63, 23);
+			button_refresh.setBounds(324, 46, 73, 48);
 			panel.add(button_refresh);
 
 			JButton button_greater = new JButton(">");
@@ -245,11 +245,11 @@ public class EditVariableConditionControler {
 			panel.add(button_clear);
 
 			JButton button_confirm = new JButton("确认");
-			button_confirm.setBounds(261, 644, 63, 23);
+			button_confirm.setBounds(261, 594, 63, 23);
 			panel.add(button_confirm);
 
 			JButton button_cancel = new JButton("取消");
-			button_cancel.setBounds(334, 644, 63, 23);
+			button_cancel.setBounds(334, 594, 63, 23);
 			panel.add(button_cancel);
 
 			JButton button_greaterOrEqualTo = new JButton(">=");
@@ -278,7 +278,8 @@ public class EditVariableConditionControler {
 
 			JScrollPane scrollPane = new JScrollPane();
 			scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
-			scrollPane.setBounds(0, 41, 386, 310);
+//			scrollPane.setBounds(0, 41, 386, 310);
+			scrollPane.setBounds(0, 41, 386, 260);
 			panel_param.add(scrollPane);
 
 			// 定义table并不可编辑
@@ -383,7 +384,7 @@ public class EditVariableConditionControler {
 					// 三级
 					String queryElevatorParamSql = "select elevator_param_id,param_code,param_name,param_type from t_elevator_param where epc_id='"
 							+ EPCID + "'";
-					connection = DriverManager.getConnection(ConstDefine.TCDB_URL, ConstDefine.TCDB_USER, ConstDefine.TCDB_PASSWORD);
+//					connection = DriverManager.getConnection(ConstDefine.TCDB_URL, ConstDefine.TCDB_USER, ConstDefine.TCDB_PASSWORD);
 					statement = connection.createStatement();
 					ResultSet resultSet3 = statement.executeQuery(queryElevatorParamSql);
 					ResultSetMetaData resultSetMetaData3 = resultSet3.getMetaData();
@@ -393,7 +394,7 @@ public class EditVariableConditionControler {
 						String elevatorParamID = resultSet3.getString(columName);
 						String queryParamRange = "select range_value from t_elevator_param_range where elevator_param_id ='"
 								+ elevatorParamID + "'";
-						connection = DriverManager.getConnection(ConstDefine.TCDB_URL, ConstDefine.TCDB_USER, ConstDefine.TCDB_PASSWORD);
+//						connection = DriverManager.getConnection(ConstDefine.TCDB_URL, ConstDefine.TCDB_USER, ConstDefine.TCDB_PASSWORD);
 						statement = connection.createStatement();
 						ResultSet resultSet4 = statement.executeQuery(queryParamRange);
 						ResultSetMetaData resultSetMetaData4 = resultSet4.getMetaData();
@@ -472,7 +473,7 @@ public class EditVariableConditionControler {
 			paramCodeAndTypeMap = new HashMap<String, String>();
 			paramCodeAndTypeMap = editVariableConditionService.getParamCodeAndTypeMap(paramInfoList);
 			JScrollPane scrollPane2 = new JScrollPane(tree);
-			scrollPane2.setBounds(10, 10, 129, 677);
+			scrollPane2.setBounds(10, 10, 270, 627);
 			getContentPane().add(scrollPane2);
 
 			// 双击监听
@@ -793,10 +794,10 @@ public class EditVariableConditionControler {
 							variableCondition = variableCondition.replaceAll("!=", "!==");
 							try {
 								// 判断是否符合，报错就不符合
-								if (!MathUtil.PassConditionNotEmpty(variableCondition) && !MathUtil.PassCondition(variableCondition)) {
+//								if (!MathUtil.PassConditionNotEmpty(variableCondition) && !MathUtil.PassCondition(variableCondition)) {
+								if (RegularUtil.JudgeArithmeticalExpression(variableCondition)) {
 									if (editVariableConditionService.checkType(variableCondition, paramCodeAndTypeMap)) {
 										// 判断条件的长度得填在BOM的几个属性里
-										// TODO Jr 要处理汉字长度
 //										int count;
 										variableCondition = variableCondition.replaceAll("!==", "!=");
 										List<String> list = StringUtil.GetStrListByCharacterSize(variableCondition, 160);
@@ -857,6 +858,9 @@ public class EditVariableConditionControler {
 //											bomLine.setProperty("S2_bl_vc4", note5);
 //										}
 									}
+								} else {
+									MessageBox.post("变量条件格式不正确", "编辑变量条件", com.teamcenter.rac.util.MessageBox.ERROR);
+									return;
 								}
 							} catch (CalculateException e1) {
 								e1.printStackTrace();

@@ -2,6 +2,7 @@ package com.uds.sjec.service;
 
 import java.util.List;
 import java.util.Map;
+
 import javax.swing.JButton;
 import javax.swing.table.DefaultTableModel;
 
@@ -11,7 +12,7 @@ import com.uds.sjec.bean.ParamReadedBean;
 public interface ICfgManagementService {
 
 	void searchCfgList(DefaultTableModel configarationModel, String searchId, String searchIdType, String taskStatu, String startedTime,
-			String finishedTime, String workFlowName);
+			String finishedTime, String workFlowName) throws Exception;
 
 	List<ParamReadedBean> getParamReadedList(String cfgListId);
 
