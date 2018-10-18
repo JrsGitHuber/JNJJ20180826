@@ -556,6 +556,7 @@ public class CfgManagementControler {
 									BomToPreviewBean.AllBeanCount = 0;
 									
 									System.out.println("--------------------Information--------------------");
+									System.out.println();
 									long startTime = System.currentTimeMillis();
 									GetBomToPreviewBean(superTopBOMLine, bean);
 									long endTime = System.currentTimeMillis();
