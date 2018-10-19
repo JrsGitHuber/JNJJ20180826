@@ -131,6 +131,7 @@ public class CfgManagementServiceImpl implements ICfgManagementService {
 						}
 					}
 				}
+				statement.close();
 			} else if (taskStatu.equals("流程中")) {
 				if (searchIdType.equals("配置单号")) {
 					querySql = "select * from t_configurationlist where configurationlist_id like'" + searchId + "'";
@@ -192,6 +193,7 @@ public class CfgManagementServiceImpl implements ICfgManagementService {
 						}
 					}
 				}
+				statement.close();
 			} else if (taskStatu.equals("已完成")) {
 				if (startedTime.compareTo(finishedTime) < 0 && !startedTime.equals(finishedTime)) {
 					if (searchIdType.equals("配置单号")) {
@@ -255,6 +257,7 @@ public class CfgManagementServiceImpl implements ICfgManagementService {
 							}
 						}
 					}
+					statement.close();
 				}
 			}
 		} catch (ClassNotFoundException e) {
@@ -337,7 +340,6 @@ public class CfgManagementServiceImpl implements ICfgManagementService {
 					String paramID = resultSet2.getString(columName);
 					String queryElevatorParamSql = "select range_value from t_elevator_param_range where elevator_param_id='" + paramID
 							+ "'";
-					connection = DriverManager.getConnection(ConstDefine.TCDB_URL, ConstDefine.TCDB_USER, ConstDefine.TCDB_PASSWORD);
 					Statement statement3 = connection.createStatement();
 					ResultSet resultSet3 = statement3.executeQuery(queryElevatorParamSql);
 					ResultSetMetaData resultSetMetaData3 = resultSet3.getMetaData();
@@ -352,8 +354,10 @@ public class CfgManagementServiceImpl implements ICfgManagementService {
 					}
 					bean.rangeOfParamValue = bean.rangeOfParamValue.substring(0, bean.rangeOfParamValue.length() - 1);
 				}
+				statement2.close();
 				paramReadedTableList.add(bean);
 			}
+			statement.close();
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
 		} catch (SQLException e) {
@@ -386,7 +390,7 @@ public class CfgManagementServiceImpl implements ICfgManagementService {
 	public void showParamReadedTable(DefaultTableModel configarationModel, List<ParamReadedBean> paramReadedList) {
 		// JTable中的数据居中显示
 		for (int i = 0; i < paramReadedTableList.size(); i++) {
-			configarationModel.addRow(new String[] { paramReadedTableList.get(i).paramCode, paramReadedTableList.get(i).paramName,
+			configarationModel.addRow(new String[] { (i+1)+"", paramReadedTableList.get(i).paramCode, paramReadedTableList.get(i).paramName,
 					paramReadedTableList.get(i).paramValue, paramReadedTableList.get(i).rangeOfParamValue, });
 		}
 	}
@@ -718,7 +722,14 @@ public class CfgManagementServiceImpl implements ICfgManagementService {
 				}
 				
 				TCComponentItem item = GetItem(superBomLine, item_id);
-				TCComponentBOMLine newBomLine = topBomLine.add(item, item.getLatestItemRevision(), null, false);
+				TCComponentBOMLine newBomLine = null;
+				try {
+//					newBomLine = topBomLine.add(item, item.getLatestItemRevision(), null, false);
+					newBomLine = topBomLine.add(item, null, null, false);
+				} catch (Exception e) {
+					System.out.println("出错ID：" + item_id + " 父ID：" + topBomLine.getProperty("bl_item_item_id"));
+					throw e;
+				}
 				if (!item_id.equals(superBomLine.getProperty("bl_item_item_id"))) {
 					// 清空topBomLine的内容
 					ClearBomLine(newBomLine);

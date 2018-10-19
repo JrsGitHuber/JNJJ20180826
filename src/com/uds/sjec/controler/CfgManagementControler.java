@@ -66,6 +66,7 @@ import com.uds.sjec.view.PSEAPP;
 @SuppressWarnings("deprecation")
 public class CfgManagementControler {
 	private static CfgManagementFrame m_frame;
+	private static Map<String, BomToPreviewBean> BTPBMAP;
 	
 	public static void SetFrameShow() {
 //		m_frame.setVisible(true);
@@ -75,6 +76,7 @@ public class CfgManagementControler {
 	}
 	
 	public void userTask() {
+		BTPBMAP = new HashMap<String, BomToPreviewBean>();
 		
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
@@ -327,9 +329,10 @@ public class CfgManagementControler {
 			};
 			table_projectInfomation.setAutoCreateRowSorter(true);
 			table_projectInfomation.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-			table_projectInfomation.setModel(new DefaultTableModel(new Object[][] {}, new String[] { "参数代号", "参数名称", "参数值", "参数范围" }));
+			table_projectInfomation.setModel(new DefaultTableModel(new Object[][] {}, new String[] { "序号", "参数代号", "参数名称", "参数值", "参数范围" }));
 			scrollPane_paramInformation.setViewportView(table_projectInfomation);
 			table_projectInfomation.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
+			table_projectInfomation.getColumnModel().getColumn(0).setMaxWidth(40);
 
 			// 右键菜单
 			popupMenu = new JPopupMenu();
@@ -557,12 +560,13 @@ public class CfgManagementControler {
 									
 									System.out.println("--------------------Information--------------------");
 									long startTime = System.currentTimeMillis();
+									BTPBMAP.clear();
 									GetBomToPreviewBean(superTopBOMLine, bean);
+									BTPBMAP.clear();
 									long endTime = System.currentTimeMillis();
 									System.out.println("此Bom共有BomLine " + BomToPreviewBean.AllBeanCount + "行");
 									System.out.println(Float.toString((endTime - startTime) / 1000F) + " seconds.");
 									System.out.println("--------------------End--------------------");
-									System.out.println();
 									
 									m_frame.setAlwaysOnTop(false);
 //									TipsUI.CloseUI();
@@ -649,6 +653,13 @@ public class CfgManagementControler {
 				TCComponentBOMLine bomLine = (TCComponentBOMLine) context.getComponent();
 				BomToPreviewBean.AllBeanCount++;
 				
+				String[] strs = bomLine.getProperties(new String[] {"bl_item_item_id", "bl_rev_item_revision_id"});
+				String uniqueMark = strs[0] + "_" + strs[1];
+				if (BTPBMAP.containsKey(uniqueMark)) {
+					rootBean.children.add(BTPBMAP.get(uniqueMark));
+					continue;
+				}
+				
 				// 判断bomLine是否符合条件
 				try {
 					if(!JudgeIfAdd(bomLine)) {
@@ -663,6 +674,7 @@ public class CfgManagementControler {
 				if (bomLine.hasChildren()) {
 					GetBomToPreviewBean(bomLine, bean);
 				}
+				BTPBMAP.put(uniqueMark, bean);
 				rootBean.children.add(bean);
 			}
 		}

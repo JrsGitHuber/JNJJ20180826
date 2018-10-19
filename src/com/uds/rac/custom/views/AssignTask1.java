@@ -78,6 +78,7 @@ public class AssignTask1 {
 		
 		private void IntiTableData(TableBean tableBean) {
 			Vector<Object> columnNames = new Vector<Object>();
+			columnNames.add("序号");
 			columnNames.add("参数代号");
 			columnNames.add("参数名称");
 			columnNames.add("参数值");
@@ -86,8 +87,10 @@ public class AssignTask1 {
 			Vector<Vector<Object>> rowDatas = new Vector<Vector<Object>>();
 			List<ExcelToDBBean> list = new ArrayList<ExcelToDBBean>(tableBean.map.values());
 			Collections.sort(list);
+			int index = 1;
 			for (ExcelToDBBean bean : list) {
 				Vector<Object> vector1 = new Vector<Object>();
+				vector1.add(index++ + "");
 				vector1.add(bean.paramCode);
 				vector1.add(bean.paramName);
 				vector1.add(bean.paramValue);
@@ -106,7 +109,7 @@ public class AssignTask1 {
 			
 			table = new JTable();
 			table.setModel(newTableModel);
-//			table.getColumnModel().getColumn(1).setMaxWidth(55);
+			table.getColumnModel().getColumn(0).setMaxWidth(40);
 			
 			DefaultTableCellRenderer r = new DefaultTableCellRenderer();
 			r.setHorizontalAlignment(JLabel.LEFT);
@@ -123,8 +126,10 @@ public class AssignTask1 {
 			DefaultTableModel newTableModel = (DefaultTableModel)table.getModel();
 			List<ExcelToDBBean> list = new ArrayList<ExcelToDBBean>(tableBean.map.values());
 			Collections.sort(list);
+			int index = 1;
 			for (ExcelToDBBean bean : list) {
 				Vector<Object> vector = new Vector<Object>();
+				vector.add(index++ + "");
 				vector.add(bean.paramCode);
 				vector.add(bean.paramName);
 				vector.add(bean.paramValue);

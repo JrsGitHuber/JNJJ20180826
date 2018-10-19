@@ -8,9 +8,10 @@ import com.teamcenter.rac.kernel.TCComponentBOMLine;
 public class BomToPreviewBean {
 	public static int AllBeanCount = 0;
 	
+	public String uniqueMark;
 	public String item_type;
 	public boolean ifChangeColor;
-	private static String[] propertyNames = new String[] { 
+	private static String[] propertyNames = new String[] {
 		"bl_indented_title", // propertyList 0
 		"S2_bl_asmno",  // propertyList 1
 		"bl_item_item_id", // propertyList 2
@@ -75,6 +76,8 @@ public class BomToPreviewBean {
 		propertyList.add(values[16]); // propertyList 12
 		propertyList.add(values[17]); // propertyList 13
 		propertyList.add(values[18]); // propertyList 14
+		
+		uniqueMark = values[2] + "_" + values[18];
 	}
 	
 	@Override
